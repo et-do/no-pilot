@@ -1,0 +1,37 @@
+{
+  "name": "no-pilot",
+  "image": "mcr.microsoft.com/devcontainers/go:1.24",
+  "features": {
+    // GitHub CLI — used for cutting releases and interacting with the repo
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "golang.go",
+        "github.copilot",
+        "github.copilot-chat",
+        "ms-vscode.makefile-tools",
+        "bierner.markdown-preview-github-styles",
+        "bierner.github-markdown-preview"
+      ],
+      "settings": {
+        "go.useLanguageServer": true,
+        "go.lintTool": "golangci-lint",
+        "go.lintOnSave": "package",
+        "go.formatTool": "goimports",
+        "go.toolsManagement.checkForUpdates": "local",
+        "[go]": {
+          "editor.formatOnSave": true,
+          "editor.codeActionsOnSave": {
+            "source.organizeImports": "explicit"
+          }
+        }
+      }
+    }
+  },
+  // Fetch dependencies and install linting toolchain after container is created.
+  // golangci-lint is installed once here so it's available immediately in the editor.
+  "postCreateCommand": "go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest && go install golang.org/x/tools/cmd/goimports@v0.33.0 && go mod tidy",
+  "remoteUser": "vscode"
+}
