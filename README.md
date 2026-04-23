@@ -45,11 +45,11 @@ Zero-trust MCP server mirroring GitHub Copilot’s built-in VS Code tools, with 
 
 ```yaml
 deny_patterns:
-	- '**/secrets/**'
-	- '**/*.key'
+  - '**/secrets/**'
+  - '**/*.key'
 allowed:
-	- '**/*.go'
-	- '**/README.md'
+  - '**/*.go'
+  - '**/README.md'
 ```
 
 4. **Start the server manually (optional)**
@@ -73,39 +73,39 @@ Below is a sample config file (`~/.config/no-pilot/config.yaml` or `.no-pilot.ya
 ```yaml
 # Deny reading secrets and private keys, allow only Go files and docs
 tools:
-	read/readFile:
-		deny_paths:
-			- '**/secrets/**'    # Block secret directories
-			- '**/*.key'         # Block private keys
-		allowed: true
-		# Only allow reading Go files and README.md
-		allowed_paths:
-			- '**/*.go'
-			- '**/README.md'
+  read/readFile:
+    deny_paths:
+      - '**/secrets/**'    # Block secret directories
+      - '**/*.key'         # Block private keys
+    allowed: true
+    # Only allow reading Go files and README.md
+    allowed_paths:
+      - '**/*.go'
+      - '**/README.md'
 
-	read/listDirectory:
-		deny_paths:
-			- '**/secrets/**'
-		allowed: true
+  read/listDirectory:
+    deny_paths:
+      - '**/secrets/**'
+    allowed: true
 
-	execute/runInTerminal:
-		# Only allow safe commands, block dangerous ones
-		allow_commands:
-			- 'go build *'
-			- 'go test *'
-			- 'ls *'
-		deny_commands:
-			- 'rm *'             # Block file deletion
-			- 'curl *'           # Block network exfiltration
-			- 'cat /etc/*'       # Block reading system files
-		allowed: true
+  execute/runInTerminal:
+    # Only allow safe commands, block dangerous ones
+    allow_commands:
+      - 'go build *'
+      - 'go test *'
+      - 'ls *'
+    deny_commands:
+      - 'rm *'             # Block file deletion
+      - 'curl *'           # Block network exfiltration
+      - 'cat /etc/*'       # Block reading system files
+    allowed: true
 
-	search/grepSearch:
-		deny_paths:
-			- '**/secrets/**'
-		allowed: true
+  search/grepSearch:
+    deny_paths:
+      - '**/secrets/**'
+    allowed: true
 
-	# Add more tool-specific rules as needed
+  # Add more tool-specific rules as needed
 ```
 
 ### Why these rules?
