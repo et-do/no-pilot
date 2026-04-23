@@ -120,19 +120,7 @@ tools:
 
 ---
 
-## Configuration
 
-no-pilot merges user and project config, with project taking precedence. Example:
-
-```yaml
-# ~/.config/no-pilot/config.yaml or .no-pilot.yaml
-deny_patterns:
-	- '**/secrets/**'
-	- '**/*.key'
-allowed:
-	- '**/*.go'
-	- '**/README.md'
-```
 
 ## Status
 
