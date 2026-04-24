@@ -1,122 +1,202 @@
 # no-pilot
 
-Zero-trust MCP server mirroring GitHub Copilot’s built-in VS Code tools, with strict policy enforcement and no cloud dependencies.
+Zero-trust MCP server mirroring GitHub Copilot's built-in VS Code tools, with strict policy enforcement and no cloud dependencies.
+
+[![Release](https://img.shields.io/github/v/release/et-do/no-pilot)](https://github.com/et-do/no-pilot/releases/latest)
+[![CI](https://github.com/et-do/no-pilot/actions/workflows/ci.yml/badge.svg)](https://github.com/et-do/no-pilot/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ---
 
 ## Overview
 
-**no-pilot** is a drop-in, zero-trust replacement for Copilot’s built-in agent tools, running entirely on your infrastructure. It enforces project and user policies for every file read, search, and shell command—no exceptions.
+**no-pilot** is a drop-in, zero-trust replacement for Copilot's built-in agent tools, running entirely on your infrastructure. It enforces project and user policies for every file read, search, and shell command—no exceptions.
 
-**Features:**
-- Mirrors Copilot’s built-in VS Code tools (file read, directory list, search, terminal, etc.)
-- Enforces deny/allow patterns from user (~/.config/no-pilot/config.yaml) and project (.no-pilot.yaml) config
+- Mirrors Copilot's built-in VS Code tools (file read, directory list, search, terminal, etc.)
+- Enforces deny/allow patterns from user and project config files
 - No cloud, no telemetry, no sidecar—just a single binary
 - Designed for teams and regulated environments
 
+---
 
 ## Quick Start
 
-1. **Download the no-pilot binary**
-	 - Place it in `~/.local/bin/no-pilot` (Linux/macOS) or `%USERPROFILE%\bin\no-pilot.exe` (Windows), or any directory on your `$PATH`.
-	 - Make it executable: `chmod +x ~/.local/bin/no-pilot`
+<details>
+<summary><strong>Linux / macOS</strong></summary>
 
-2. **Add no-pilot to VS Code MCP config**
-	 - Open (or create) `.vscode/mcp.json` in your project, or open the user config via `MCP: Open User Configuration` in VS Code.
-	 - Add:
+**1. Download and install the binary**
+
+```sh
+# Linux (amd64)
+curl -L https://github.com/et-do/no-pilot/releases/latest/download/no-pilot-linux-amd64 \
+  -o ~/.local/bin/no-pilot && chmod +x ~/.local/bin/no-pilot
+
+# Linux (arm64)
+curl -L https://github.com/et-do/no-pilot/releases/latest/download/no-pilot-linux-arm64 \
+  -o ~/.local/bin/no-pilot && chmod +x ~/.local/bin/no-pilot
+
+# macOS (Apple Silicon)
+curl -L https://github.com/et-do/no-pilot/releases/latest/download/no-pilot-darwin-arm64 \
+  -o ~/.local/bin/no-pilot && chmod +x ~/.local/bin/no-pilot
+
+# macOS (Intel)
+curl -L https://github.com/et-do/no-pilot/releases/latest/download/no-pilot-darwin-amd64 \
+  -o ~/.local/bin/no-pilot && chmod +x ~/.local/bin/no-pilot
+```
+
+If `~/.local/bin` is not on your `$PATH`, add this to your shell profile (`~/.bashrc`, `~/.zshrc`, etc.):
+
+```sh
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+**2. Add no-pilot to VS Code MCP config**
+
+Open (or create) `.vscode/mcp.json` in your project, or open the user config via `MCP: Open User Configuration` in VS Code:
 
 ```json
 {
-	"servers": {
-		"no-pilot": {
-			"command": "/absolute/path/to/no-pilot",
-			"args": []
-		}
-	}
+  "servers": {
+    "no-pilot": {
+      "command": "/home/your-username/.local/bin/no-pilot",
+      "args": []
+    }
+  }
 }
 ```
-> **Tip:** Use the full path to the binary if VS Code cannot find it. On Linux/macOS, this is often `~/.local/bin/no-pilot`.
 
-3. **Configure policies**
-	 - User config: `~/.config/no-pilot/config.yaml`
-	 - Project config: `.no-pilot.yaml` in your repo root (overrides user config)
+> [!TIP]
+> VS Code does not expand `~` in the command path — use the full absolute path.
 
-**Example policy:**
+**3. Restart VS Code**
 
-```yaml
-deny_patterns:
-  - '**/secrets/**'
-  - '**/*.key'
-allowed:
-  - '**/*.go'
-  - '**/README.md'
+Open the Output panel (`Ctrl+Shift+U`), select `MCP: no-pilot`, and confirm the server starts and tools are discovered.
+
+</details>
+
+<details>
+<summary><strong>Windows</strong></summary>
+
+**1. Download the binary**
+
+Open PowerShell and run:
+
+```powershell
+# Windows (amd64)
+$dest = "$env:USERPROFILE\bin"
+New-Item -ItemType Directory -Force -Path $dest | Out-Null
+Invoke-WebRequest -Uri "https://github.com/et-do/no-pilot/releases/latest/download/no-pilot-windows-amd64" `
+  -OutFile "$dest\no-pilot.exe"
+
+# Windows (arm64)
+$dest = "$env:USERPROFILE\bin"
+New-Item -ItemType Directory -Force -Path $dest | Out-Null
+Invoke-WebRequest -Uri "https://github.com/et-do/no-pilot/releases/latest/download/no-pilot-windows-arm64" `
+  -OutFile "$dest\no-pilot.exe"
 ```
 
-4. **Start the server manually (optional)**
+Then add `%USERPROFILE%\bin` to your PATH:
 
-```sh
-no-pilot                # Start MCP server on stdio (default)
-no-pilot --config ./no-pilot.yaml
+```powershell
+[Environment]::SetEnvironmentVariable("Path", $env:Path + ";$env:USERPROFILE\bin", "User")
 ```
 
-5. **Restart VS Code**
-	 - Open the Output panel (`Ctrl+Shift+U`) and select `MCP: no-pilot` to verify the server starts and tools are discovered.
-	 - Use the “Configure Tools” button in the VS Code Chat input bar to verify no-pilot’s tools are listed.
+> [!NOTE]
+> Restart your terminal after updating PATH for the change to take effect.
+
+**2. Add no-pilot to VS Code MCP config**
+
+Open (or create) `.vscode/mcp.json` in your project, or open the user config via `MCP: Open User Configuration` in VS Code:
+
+```json
+{
+  "servers": {
+    "no-pilot": {
+      "command": "C:\\Users\\your-username\\bin\\no-pilot.exe",
+      "args": []
+    }
+  }
+}
+```
+
+**3. Restart VS Code**
+
+Open the Output panel (`Ctrl+Shift+U`), select `MCP: no-pilot`, and confirm the server starts and tools are discovered.
+
+</details>
 
 ---
 
+## Policy Configuration
 
-## Example: Full Policy Configuration
+> [!NOTE]
+> Policy configuration is optional. By default no-pilot runs with no restrictions.
 
-Below is a sample config file (`~/.config/no-pilot/config.yaml` or `.no-pilot.yaml`) with rules for each tool category.
+Policies are configured via YAML files:
+
+| Platform | User config path |
+|---|---|
+| Linux | `~/.config/no-pilot/config.yaml` |
+| macOS | `~/Library/Application Support/no-pilot/config.yaml` |
+| Windows | `%AppData%\no-pilot\config.yaml` |
+
+Place a `.no-pilot.yaml` file in your repo root to set project-level policy. Project config always takes precedence over user config.
+
+**Example:**
 
 ```yaml
-# Deny reading secrets and private keys, allow only Go files and docs
 tools:
   read/readFile:
-    deny_paths:
-      - '**/secrets/**'    # Block secret directories
-      - '**/*.key'         # Block private keys
     allowed: true
-    # Only allow reading Go files and README.md
-    allowed_paths:
-      - '**/*.go'
-      - '**/README.md'
-
-  read/listDirectory:
     deny_paths:
       - '**/secrets/**'
+      - '**/*.key'
+
+  read/listDirectory:
     allowed: true
+    deny_paths:
+      - '**/secrets/**'
 
   execute/runInTerminal:
-    # Only allow safe commands, block dangerous ones
+    allowed: true
     allow_commands:
       - 'go build *'
       - 'go test *'
       - 'ls *'
     deny_commands:
-      - 'rm *'             # Block file deletion
-      - 'curl *'           # Block network exfiltration
-      - 'cat /etc/*'       # Block reading system files
-    allowed: true
+      - 'rm *'
+      - 'curl *'
 
   search/grepSearch:
+    allowed: true
     deny_paths:
       - '**/secrets/**'
-    allowed: true
-
-  # Add more tool-specific rules as needed
 ```
 
-### Why these rules?
+<details>
+<summary><strong>Policy field reference</strong></summary>
 
-- **deny_paths**: Prevents accidental or malicious access to sensitive files (secrets, keys, etc).
-- **allowed_paths**: Restricts access to only the files you want agents to see (e.g., source code, docs).
-- **allow_commands**: Only allows a safe subset of shell commands to run (e.g., build, test, list files).
-- **deny_commands**: Explicitly blocks dangerous commands (e.g., deleting files, network access, reading system files).
-- **allowed**: Set to `true` to enable the tool, `false` to disable it entirely.
+| Field | Type | Description |
+|---|---|---|
+| `allowed` | bool | Set to `false` to disable the tool entirely. Defaults to `true`. |
+| `deny_paths` | glob list | File path arguments matching any pattern are blocked. |
+| `allow_commands` | glob list | Only commands matching a pattern are permitted (allowlist). |
+| `deny_commands` | glob list | Commands matching any pattern are blocked, even if `allow_commands` permits them. |
+| `deny_urls` | glob list | URL arguments matching any pattern are blocked (web tools). |
 
-**Tip:** Project config (`.no-pilot.yaml`) always overrides user config for the same tool.
+</details>
+
+<details>
+<summary><strong>How user and project configs merge (zero-trust rules)</strong></summary>
+
+> [!IMPORTANT]
+> These rules are designed so that restrictions can only tighten, never loosen, as configs layer on top of each other.
+
+- **`allowed: false` is sticky** — a tool disabled at the user level cannot be re-enabled by a project config.
+- **Deny lists union** — every denied path, command, or URL from every config layer accumulates.
+- **Allow lists intersect** — a command must satisfy every allowlist that has been configured; if only one layer restricts commands, that list applies.
+
+</details>
 
 ---
 
