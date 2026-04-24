@@ -17,6 +17,8 @@ Zero-trust MCP server mirroring GitHub Copilot's built-in VS Code tools, with st
 - No cloud, no telemetry, no sidecar—just a single binary
 - Designed for teams, regulated environments, and the security conscious (or paranoid) AI Agent user
 
+![Copilot agent blocked by no-pilot policy in the chat panel](imgs/copilot-deny-in-chat-example.png)
+
 ---
 
 ## Security Model
