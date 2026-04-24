@@ -3,8 +3,8 @@
 //
 // Each tool (file reads, shell commands, search, etc.) proxied through no-pilot
 // can be restricted at the user level (~/.config/no-pilot/config.yaml) or at
-// the project level (.no-pilot.yaml in the workspace root). Project config
-// always takes precedence.
+// the project level (.no-pilot.yaml in the workspace root). Restrictions can
+// only tighten as config layers accumulate — never loosen.
 //
 // Distribution: teams point their VSCode MCP server config at the no-pilot
 // binary; no daemon or sidecar required.
