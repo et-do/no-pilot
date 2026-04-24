@@ -35,9 +35,17 @@
 
 ## Example Commit Messages
 
+| Prefix | Version Bump | When to use |
+|---|---|---|
+| `feat:` | minor (1.**1**.0) | New user-facing feature |
+| `fix:` | patch (1.0.**1**) | Bug fix |
+| `chore:`, `docs:`, `refactor:`, `test:` | none | No release triggered |
+| `feat!:` or `fix!:` | major (**2**.0.0) | Breaking change |
+
 - `feat: add support for new tool`
 - `fix: correct policy enforcement bug`
 - `chore: update dependencies`
+- `feat!: redesign policy config format` _(breaking change — bumps major)_
 
 ## Questions?
 
