@@ -4,7 +4,7 @@
 
 - **Trunk-based development:** All work is merged to `main`. Feature and fix branches should be short-lived.
 - **Pull Requests:** Open a PR for all changes. All PRs must pass CI before merging.
-- **Conventional Commits:** Use [Conventional Commits](https://www.conventionalcommits.org/) for all commit messages (e.g., `feat:`, `fix:`, `chore:`). This enables automated changelogs and versioning.
+- **Conventional Commits:** Use [Conventional Commits](https://www.conventionalcommits.org/) for all commit messages **and PR titles** (e.g., `feat:`, `fix:`, `chore:`). This is critical — GitHub uses the PR title as the squash commit message, so a non-conforming PR title (e.g. `Fix something` instead of `fix: something`) will be invisible to release-please and won't trigger a version bump.
 - **Code Review:** All PRs require review and must pass all tests before merge.
 
 ## Release Process
