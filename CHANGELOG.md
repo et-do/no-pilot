@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.1.0](https://github.com/et-do/no-pilot/compare/v1.0.3...v1.1.0) (2026-04-24)
+
+
+### Features
+
+* add command-intersection, improve security policies  ([#16](https://github.com/et-do/no-pilot/issues/16)) ([c2d5934](https://github.com/et-do/no-pilot/commit/c2d5934aedb0af118be3e170b6138915d50845e0))
+
+
+### Bug Fixes
+
+* mcp setup ([#15](https://github.com/et-do/no-pilot/issues/15)) ([7dabb9b](https://github.com/et-do/no-pilot/commit/7dabb9bbf29c9be1da1f0b537501ffa0a08186f6))
+
 ## [1.0.3](https://github.com/et-do/no-pilot/compare/v1.0.2...v1.0.3) (2026-04-24)
 
 
