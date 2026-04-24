@@ -192,9 +192,11 @@ tools:
 	}
 }
 
-// TestLoad_allowCommandsIntersection verifies that allow_commands from user and
-// project are intersected — only patterns present in both are kept.
-func TestLoad_allowCommandsIntersection(t *testing.T) {
+// TestLoad_allowCommandsLayers verifies that allow_commands from user and project
+// configs are accumulated as separate layers in AllowCommandLayers. A command
+// must satisfy every layer that defines an allowlist (logical AND across layers,
+// not a string-set intersection of patterns).
+func TestLoad_allowCommandsLayers(t *testing.T) {
 	userCfgDir := t.TempDir()
 	t.Setenv("XDG_CONFIG_HOME", userCfgDir)
 
@@ -220,14 +222,38 @@ tools:
 		t.Fatalf("Load() error = %v", err)
 	}
 	pol := cfg.Policy("execute_runInTerminal")
-	// Only "go *" appears in both lists.
-	if len(pol.AllowCommands) != 1 || pol.AllowCommands[0] != "go *" {
-		t.Errorf("AllowCommands = %v, want [\"go *\"] (intersection)", pol.AllowCommands)
+
+	// Two layers must be accumulated: user's and project's.
+	if len(pol.AllowCommandLayers) != 2 {
+		t.Fatalf("AllowCommandLayers len = %d, want 2; got %v", len(pol.AllowCommandLayers), pol.AllowCommandLayers)
+	}
+
+	// Layer 0: user's allowlist.
+	wantUser := map[string]bool{"go *": true, "git *": true}
+	if len(pol.AllowCommandLayers[0]) != len(wantUser) {
+		t.Errorf("layer[0] = %v, want %v", pol.AllowCommandLayers[0], wantUser)
+	}
+	for _, p := range pol.AllowCommandLayers[0] {
+		if !wantUser[p] {
+			t.Errorf("unexpected pattern %q in layer[0]", p)
+		}
+	}
+
+	// Layer 1: project's allowlist.
+	wantProj := map[string]bool{"go *": true, "npm *": true}
+	if len(pol.AllowCommandLayers[1]) != len(wantProj) {
+		t.Errorf("layer[1] = %v, want %v", pol.AllowCommandLayers[1], wantProj)
+	}
+	for _, p := range pol.AllowCommandLayers[1] {
+		if !wantProj[p] {
+			t.Errorf("unexpected pattern %q in layer[1]", p)
+		}
 	}
 }
 
 // TestLoad_allowCommandsOneNilUsesOther verifies that if one layer has no
-// allow_commands restriction the other layer's list applies.
+// allow_commands restriction the other layer's list is the sole layer in
+// AllowCommandLayers, so its allowlist still applies.
 func TestLoad_allowCommandsOneNilUsesOther(t *testing.T) {
 	userCfgDir := t.TempDir()
 	t.Setenv("XDG_CONFIG_HOME", userCfgDir)
@@ -253,13 +279,18 @@ tools:
 		t.Fatalf("Load() error = %v", err)
 	}
 	pol := cfg.Policy("execute_runInTerminal")
-	want := map[string]bool{"go *": true, "make *": true}
-	if len(pol.AllowCommands) != len(want) {
-		t.Fatalf("AllowCommands = %v, want %v", pol.AllowCommands, want)
+
+	// Only one layer since the user config had no allow_commands.
+	if len(pol.AllowCommandLayers) != 1 {
+		t.Fatalf("AllowCommandLayers len = %d, want 1; got %v", len(pol.AllowCommandLayers), pol.AllowCommandLayers)
 	}
-	for _, p := range pol.AllowCommands {
+	want := map[string]bool{"go *": true, "make *": true}
+	if len(pol.AllowCommandLayers[0]) != len(want) {
+		t.Fatalf("AllowCommandLayers[0] = %v, want %v", pol.AllowCommandLayers[0], want)
+	}
+	for _, p := range pol.AllowCommandLayers[0] {
 		if !want[p] {
-			t.Errorf("unexpected AllowCommands entry %q", p)
+			t.Errorf("unexpected AllowCommandLayers[0] entry %q", p)
 		}
 	}
 }
@@ -274,5 +305,90 @@ func TestLoad_malformedYAML(t *testing.T) {
 	_, err := config.Load(dir)
 	if err == nil {
 		t.Fatal("Load() error = nil, want parse error")
+	}
+}
+
+// TestLoad_invalidDenyPathPattern verifies that an invalid doublestar glob in
+// deny_paths causes Load to return an error. This ensures fail-closed behaviour:
+// a misconfigured deny rule is rejected at startup rather than silently skipped
+// at enforcement time (which would be fail-open).
+func TestLoad_invalidDenyPathPattern(t *testing.T) {
+	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+
+	dir := t.TempDir()
+	writeFile(t, filepath.Join(dir, ".no-pilot.yaml"), `
+tools:
+  read_readFile:
+    deny_paths:
+      - "[invalid"
+`)
+
+	_, err := config.Load(dir)
+	if err == nil {
+		t.Fatal("Load() error = nil, want error for invalid glob pattern")
+	}
+}
+
+// TestLoad_denyShellEscapeIsSticky verifies that deny_shell_escape follows
+// zero-trust OR semantics: once true in any config layer it cannot be unset
+// by a subsequent layer.
+func TestLoad_denyShellEscapeIsSticky(t *testing.T) {
+	userCfgDir := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", userCfgDir)
+
+	// User config enables deny_shell_escape.
+	writeFile(t, filepath.Join(userCfgDir, "no-pilot", "config.yaml"), `
+tools:
+  execute_runInTerminal:
+    deny_shell_escape: true
+`)
+
+	// Project config does NOT set deny_shell_escape (defaults to false).
+	projectDir := t.TempDir()
+	writeFile(t, filepath.Join(projectDir, ".no-pilot.yaml"), `
+tools:
+  execute_runInTerminal:
+    allowed: true
+`)
+
+	cfg, err := config.Load(projectDir)
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+	pol := cfg.Policy("execute_runInTerminal")
+	if !pol.DenyShellEscape {
+		t.Error("DenyShellEscape = false after merge, want true (sticky once set)")
+	}
+}
+
+// TestLoad_denyShellEscapeCanBeAddedByProjectConfig verifies that a project
+// config can tighten security by enabling deny_shell_escape even when the user
+// config does not set it.
+func TestLoad_denyShellEscapeCanBeAddedByProjectConfig(t *testing.T) {
+	userCfgDir := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", userCfgDir)
+
+	// User config does NOT set deny_shell_escape.
+	writeFile(t, filepath.Join(userCfgDir, "no-pilot", "config.yaml"), `
+tools:
+  execute_runInTerminal:
+    allowed: true
+`)
+
+	// Project config enables deny_shell_escape (tightening).
+	projectDir := t.TempDir()
+	writeFile(t, filepath.Join(projectDir, ".no-pilot.yaml"), `
+tools:
+  execute_runInTerminal:
+    deny_shell_escape: true
+`)
+
+	cfg, err := config.Load(projectDir)
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+	pol := cfg.Policy("execute_runInTerminal")
+	if !pol.DenyShellEscape {
+		t.Error("DenyShellEscape = false after merge, want true (project config can add restriction)")
 	}
 }

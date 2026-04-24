@@ -10,12 +10,41 @@ Zero-trust MCP server mirroring GitHub Copilot's built-in VS Code tools, with st
 
 ## Overview
 
-**no-pilot** is a drop-in, zero-trust replacement for Copilot's built-in agent tools, running entirely on your infrastructure. It enforces project and user policies for every file read, search, and shell command—no exceptions.
+**no-pilot** is a drop-in, zero-trust replacement for Copilot's built-in agent tools, running entirely on your infrastructure. It enforces customizable project and user policies for every tool at the system level, ensuring the Agent doesn't conviently "ignore" your prompting instructions.
 
 - Mirrors Copilot's built-in VS Code tools (file read, directory list, search, terminal, etc.)
 - Enforces deny/allow patterns from user and project config files
 - No cloud, no telemetry, no sidecar—just a single binary
-- Designed for teams and regulated environments
+- Designed for teams, regulated environments, and the security conscious (or paranoid) AI Agent user
+
+---
+
+## Security Model
+
+AI coding agents introduce two distinct risks. no-pilot is purpose-built to address the first; the second requires separate action on your part.
+
+### Threat 1 — Agent over-permissioning (what no-pilot solves)
+
+By default, Copilot's built-in tools give the agent unrestricted access to your workspace: every file, every shell command, every URL request. Because the agent interprets natural language, it can be directed — accidentally or via prompt injection — to read sensitive files, run destructive commands, or exfiltrate data through tool calls. Prompting it to "not do that" is not a reliable security control.
+
+**no-pilot enforces policy at the tool call layer, not the prompt layer.** No matter what the agent is instructed to do, every tool invocation is checked against your policy in the MCP server before anything executes. The agent cannot talk its way past it.
+
+| Security principle | How it is implemented |
+|---|---|
+| Principle of least privilege | Tools are individually controlled; disable anything the agent doesn't need with `allowed: false` |
+| Zero-trust between config layers | Restrictions only tighten across user → project config; `allowed: false` is sticky |
+| Fail-closed | Invalid deny patterns cause server startup failure rather than silent bypass |
+| Defense in depth | Four independent enforcement layers: tool enable → path allow/deny → command allow/deny → URL deny |
+| Explicit allow over implicit deny | `allow_commands` blocks everything not explicitly listed when set |
+| Deny overrides allow | `deny_commands` and `deny_shell_escape` are evaluated after `allow_commands`; a denied pattern always wins |
+
+### Threat 2 — Data leakage to cloud AI services (requires separate action)
+
+Whether or not you use no-pilot, your code and prompts may be sent to and stored by cloud AI providers. no-pilot runs entirely locally and has no telemetry, but it does not control what Copilot itself sends upstream. Address this separately:
+
+- **VS Code**: Settings → search `telemetry.telemetryLevel` → set to `off`
+- **GitHub Copilot**: GitHub account → Settings → Copilot → opt out of "Allow GitHub to use my data for product improvements"
+- **Enterprise / regulated environments**: Use GitHub Copilot Enterprise with a data residency agreement, a self-hosted model gateway, or a fully air-gapped AI solution
 
 ---
 
@@ -32,6 +61,105 @@ The devcontainer wires up `.vscode/mcp.json` so Copilot launches the server via 
 
 > [!TIP]
 > After making code changes, restart the MCP server to recompile: **Command Palette → MCP: Restart Server → no-pilot**. No `make install` needed — `go run .` uses the Go build cache and is always in sync with your source.
+
+</details>
+
+<details>
+<summary><strong>Your own project &mdash; Dev Container integration</strong></summary>
+
+Use this setup to add no-pilot to an **existing project** that already has (or will have) a `.devcontainer/` configuration. This installs no-pilot *inside* your project's container so it is available to Copilot without any local toolchain dependencies on the host.
+
+> [!IMPORTANT]
+> VS Code attaches to the container and tries to start MCP servers before `postCreateCommand` finishes. If the binary is not already in the image at that point, the server fails to start. The recommended fix is to install no-pilot during the **image build** so it is always present when the container opens.
+
+---
+
+**Step 1 — Install no-pilot in the container image**
+
+*Option A — Dockerfile (recommended, no timing issues)*
+
+Add a `RUN` step to your `.devcontainer/Dockerfile`. The snippet auto-detects `amd64` vs `arm64`:
+
+```dockerfile
+RUN ARCH=$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/') && \
+    curl -fsSL \
+      "https://github.com/et-do/no-pilot/releases/latest/download/no-pilot-linux-${ARCH}" \
+      -o /usr/local/bin/no-pilot && \
+    chmod +x /usr/local/bin/no-pilot
+```
+
+If your `devcontainer.json` uses `"image"` rather than a Dockerfile, switch it to build from a Dockerfile first:
+
+```json
+{
+  "build": { "dockerfile": "Dockerfile" }
+}
+```
+
+---
+
+*Option B — `postCreateCommand` (simpler, but requires one manual server restart)*
+
+If you prefer not to maintain a Dockerfile, add this to your `devcontainer.json`. Note that you will need to restart the MCP server once after the container finishes setting up.
+
+```json
+{
+  "postCreateCommand": "ARCH=$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/') && curl -fsSL \"https://github.com/et-do/no-pilot/releases/latest/download/no-pilot-linux-${ARCH}\" -o /usr/local/bin/no-pilot && chmod +x /usr/local/bin/no-pilot"
+}
+```
+
+After the container build completes, run **MCP: Restart Server → no-pilot** from the Command Palette once. Subsequent container opens will find the binary already cached in the container layer.
+
+---
+
+**Step 2 — Add `.vscode/mcp.json` to your project**
+
+Create (or add to) `.vscode/mcp.json` in your project root:
+
+```json
+{
+  "servers": {
+    "no-pilot": {
+      "type": "stdio",
+      "command": "/usr/local/bin/no-pilot",
+      "args": []
+    }
+  }
+}
+```
+
+Commit this file so everyone on the team gets the MCP server automatically when they open the devcontainer.
+
+---
+
+**Step 3 — (Optional) Add a project policy file**
+
+Create `.no-pilot.yaml` in your project root to apply project-level restrictions on top of each developer's personal config. Example for a typical web service:
+
+```yaml
+tools:
+  read_readFile:
+    deny_paths:
+      - '**/*.key'
+      - '**/*.pem'
+      - '**/.env*'
+      - '**/secrets/**'
+
+  execute_runInTerminal:
+    allow_commands:
+      - 'go *'
+      - 'make *'
+      - 'git *'
+      - 'npm *'
+      - 'docker *'
+    deny_commands:
+      - 'rm -rf *'
+      - 'curl * | *'
+      - 'wget * | *'
+    deny_shell_escape: true
+```
+
+Commit this file alongside `.vscode/mcp.json`. It is applied automatically when no-pilot starts in your workspace.
 
 </details>
 
@@ -218,6 +346,7 @@ tools:
     deny_commands:
       - 'rm *'
       - 'curl *'
+    deny_shell_escape: true
 
   search_grepSearch:
     allowed: true
@@ -234,6 +363,7 @@ tools:
 | `deny_paths` | glob list | File path arguments matching any pattern are blocked. |
 | `allow_commands` | glob list | Only commands matching a pattern are permitted (allowlist). |
 | `deny_commands` | glob list | Commands matching any pattern are blocked, even if `allow_commands` permits them. |
+| `deny_shell_escape` | bool | Block common interpreter invocations that accept a `-c`/`-e` flag (`bash -c`, `python -c`, `perl -e`, etc.). These can bypass `deny_commands` glob patterns by wrapping any command in a shell string. Recommended whenever `deny_commands` is set. |
 | `deny_urls` | glob list | The **hostname** of URL arguments matching any pattern is blocked (web tools). |
 
 </details>
@@ -246,7 +376,16 @@ tools:
 
 - **`allowed: false` is sticky** — a tool disabled at the user level cannot be re-enabled by a project config.
 - **Deny lists union** — every denied path, command, or URL from every config layer accumulates.
-- **Allow lists intersect** — a command must satisfy every allowlist that has been configured; if only one layer restricts commands, that list applies.
+- **Allow lists AND across layers** — a command must satisfy the allowlist from every config layer that defines one. If only one layer defines `allow_commands`, that list applies. If both layers define it, the command must match at least one pattern in each layer independently.
+
+</details>
+
+<details>
+<summary><strong>Known limitations</strong></summary>
+
+- **Command matching is string-based, not executable-based.** `deny_commands: ['rm *']` blocks the string `rm -rf /`, but not `bash -c 'rm -rf /'`. Enable `deny_shell_escape: true` to block the most common `-c`/`-e` interpreter invocations. For the strictest control, disable `execute_runInTerminal` entirely with `allowed: false`.
+- **`deny_urls` matches the hostname only**, not the full URL. Use patterns like `*.internal` or `169.254.*`, not `https://evil.com/bad-path*`.
+- **Path deny patterns match the cleaned path.** `..` components in paths are resolved before matching, so traversal sequences cannot bypass a pattern. However, symlinks are not resolved.
 
 </details>
 
