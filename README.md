@@ -121,11 +121,4 @@ tools:
 ---
 
 
-
-## Status
-
-See TODO.md for tool parity and progress.
-
----
-
 MIT License | © et-do
