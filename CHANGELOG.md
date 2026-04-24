@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.3](https://github.com/et-do/no-pilot/compare/v1.0.2...v1.0.3) (2026-04-24)
+
+
+### Bug Fixes
+
+* invalid tool names ([#13](https://github.com/et-do/no-pilot/issues/13)) ([404e1d8](https://github.com/et-do/no-pilot/commit/404e1d8b5767a2ccc9c6fc7508cd668681406d3d))
+
 ## [1.0.2](https://github.com/et-do/no-pilot/compare/v1.0.1...v1.0.2) (2026-04-24)
 
 
