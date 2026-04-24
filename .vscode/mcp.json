@@ -1,0 +1,9 @@
+{
+  "servers": {
+    "no-pilot": {
+      "type": "stdio",
+      "command": "/bin/sh",
+      "args": ["-c", "cd /workspaces/no-pilot && go run ."]
+    }
+  }
+}

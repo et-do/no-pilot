@@ -4,7 +4,9 @@
 //     ~/Library/Application Support/no-pilot/config.yaml (macOS)
 //  2. Project-level config: .no-pilot.yaml in the workspace root
 //
-// Project config always takes precedence over user config at the tool level.
+// The two configs are merged with zero-trust semantics: restrictions can only
+// tighten as layers accumulate. A tool disabled at the user level cannot be
+// re-enabled by a project config, and deny lists from both layers are unioned.
 package config
 
 import (

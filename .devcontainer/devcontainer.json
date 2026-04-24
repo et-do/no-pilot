@@ -33,6 +33,6 @@
   },
   // Fetch dependencies and install linting toolchain after container is created.
   // golangci-lint is installed once here so it's available immediately in the editor.
-  "postCreateCommand": "go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest && go install golang.org/x/tools/cmd/goimports@v0.33.0 && go mod tidy",
+  "postCreateCommand": "go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest && go install golang.org/x/tools/cmd/goimports@v0.33.0 && go mod tidy && make install",
   "remoteUser": "vscode"
 }
