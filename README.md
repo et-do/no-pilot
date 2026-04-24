@@ -24,19 +24,54 @@ Zero-trust MCP server mirroring GitHub Copilot's built-in VS Code tools, with st
 <details>
 <summary><strong>VS Code Dev Container (recommended)</strong></summary>
 
-The devcontainer automatically builds and installs no-pilot inside the container and wires up `.vscode/mcp.json` so Copilot uses it immediately.
+The devcontainer wires up `.vscode/mcp.json` so Copilot launches the server via `go run .` on demand — no pre-built binary required.
 
 1. Open the repo in VS Code and click **Reopen in Container** when prompted (or run **Dev Containers: Reopen in Container** from the Command Palette).
-2. Wait for the container to finish building — no-pilot is installed automatically.
-3. Open the Output panel (`Ctrl+Shift+U`), select `MCP: no-pilot`, and confirm the server is running and 5 tools are discovered.
+2. Wait for the container to finish building.
+3. Open the Output panel (`Ctrl+Shift+U`), select `MCP: no-pilot`, and confirm the server is running and tools are discovered.
 
 > [!TIP]
-> After making code changes, run `make install` in the terminal then **MCP: Restart Server → no-pilot** to reload the binary without rebuilding the container.
+> After making code changes, restart the MCP server to recompile: **Command Palette → MCP: Restart Server → no-pilot**. No `make install` needed — `go run .` uses the Go build cache and is always in sync with your source.
 
 </details>
 
 <details>
-<summary><strong>Linux / macOS</strong></summary>
+<summary><strong>Linux / macOS &mdash; from source (no container)</strong></summary>
+
+Use this setup if you prefer to work directly in Linux or macOS without a Dev Container.
+
+**Prerequisites:** Go 1.24+ installed and available on your `PATH`, and the repository cloned locally.
+
+**1. Add no-pilot to VS Code MCP config**
+
+Open (or create) `.vscode/mcp.json` in your project:
+
+```json
+{
+  "servers": {
+    "no-pilot": {
+      "type": "stdio",
+      "command": "/bin/sh",
+      "args": ["-c", "cd /absolute/path/to/no-pilot && go run ."]
+    }
+  }
+}
+```
+
+> [!IMPORTANT]
+> Use a shell wrapper (`/bin/sh -c "cd ... && go run ."`) rather than pointing directly at a pre-built binary. VS Code starts the MCP server immediately on window attach — potentially before any build scripts finish — which causes `ENOENT` errors if the binary is not yet on disk. `go run .` compiles on demand using the Go build cache and is always ready.
+
+**2. Open the Output panel**
+
+Press `Ctrl+Shift+U`, select `MCP: no-pilot`, and confirm the server starts and tools are discovered.
+
+> [!TIP]
+> After making source changes, restart the MCP server to recompile: **Command Palette → MCP: Restart Server → no-pilot**.
+
+</details>
+
+<details>
+<summary><strong>Linux / macOS &mdash; pre-built binary</strong></summary>
 
 **1. Download and install the binary**
 
@@ -138,7 +173,7 @@ Open (or create) `.vscode/mcp.json` in your project, or open the user config via
 Open the Output panel (`Ctrl+Shift+U`), select `MCP: no-pilot`, and confirm the server starts and tools are discovered.
 
 > [!WARNING]
-> If you are using a **VS Code Dev Container**, do not use the Windows binary in your user-level `mcp.json`. The Windows binary cannot access container filesystem paths. Use the Dev Container setup above instead — the workspace `.vscode/mcp.json` runs the Linux binary inside the container where your files are.
+> If you are using a **VS Code Dev Container**, do not use the Windows binary in your user-level `mcp.json`. The Windows binary cannot access container filesystem paths. Use the Dev Container setup above instead — the workspace `.vscode/mcp.json` runs the server inside the container where your files are.
 
 </details>
 
@@ -157,7 +192,7 @@ Policies are configured via YAML files:
 | macOS | `~/Library/Application Support/no-pilot/config.yaml` |
 | Windows | `%AppData%\no-pilot\config.yaml` |
 
-Place a `.no-pilot.yaml` file in your repo root to set project-level policy. Project config always takes precedence over user config.
+Place a `.no-pilot.yaml` file in your repo root to set project-level policy. Project config is layered on top of user config — restrictions can only tighten, never loosen.
 
 **Example:**
 
@@ -199,7 +234,7 @@ tools:
 | `deny_paths` | glob list | File path arguments matching any pattern are blocked. |
 | `allow_commands` | glob list | Only commands matching a pattern are permitted (allowlist). |
 | `deny_commands` | glob list | Commands matching any pattern are blocked, even if `allow_commands` permits them. |
-| `deny_urls` | glob list | URL arguments matching any pattern are blocked (web tools). |
+| `deny_urls` | glob list | The **hostname** of URL arguments matching any pattern is blocked (web tools). |
 
 </details>
 

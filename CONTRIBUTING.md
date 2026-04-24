@@ -35,15 +35,23 @@
 
 ## Local Development (devcontainer)
 
-The devcontainer automatically builds and installs the `no-pilot` binary to `/usr/local/bin/no-pilot` on creation. The workspace `.vscode/mcp.json` points Copilot at this binary so it runs inside the container with access to the workspace filesystem.
+The devcontainer is the recommended development environment. The workspace `.vscode/mcp.json` launches the server with `go run .` so Copilot always runs the current source without requiring a separate build step.
 
-After making changes to the server code, reload the binary without rebuilding the container:
+**Why `go run .` instead of a pre-built binary?**
+VS Code starts the MCP server immediately on window attach, before any binary has been built. Pointing at a binary path causes `ENOENT` if the binary is not yet on disk. `go run .` compiles on demand using the Go build cache and is always ready.
+
+After making changes to the server code, restart the MCP server to recompile:
+
+**Command Palette → MCP: Restart Server → no-pilot**
+
+To build and install the binary explicitly (e.g. for testing the installed binary or cutting a release build):
 
 ```sh
 make install
 ```
 
-Then restart the MCP server in VS Code: **Command Palette → MCP: Restart Server → no-pilot**.
+> [!NOTE]
+> `make install` is **not** run automatically on every VS Code attach. The MCP server uses `go run .` directly, so the installed binary is only needed if you are explicitly testing it.
 
 ## Example Commit Messages
 

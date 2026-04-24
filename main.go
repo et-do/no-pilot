@@ -11,12 +11,12 @@
 //
 // Usage:
 //
-//	no-pilot                        # start MCP server on stdio (default)
-//	no-pilot --config ./no-pilot.yaml
+//	no-pilot     # start MCP server on stdio (default)
 package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/et-do/no-pilot/internal/config"
@@ -35,16 +35,23 @@ func main() {
 }
 
 func run() error {
+	logger := log.New(os.Stderr, "[no-pilot] ", log.LstdFlags)
+
 	wd, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("get working directory: %w", err)
 	}
+	logger.Printf("starting version=%s cwd=%s", version, wd)
 
 	cfg, err := config.Load(wd)
 	if err != nil {
 		return fmt.Errorf("load config: %w", err)
 	}
+	logger.Printf("config loaded")
 
 	s := nopilotserver.Build(cfg, version)
-	return server.ServeStdio(s)
+	logger.Printf("server built, listening on stdio")
+	err = server.ServeStdio(s, server.WithErrorLogger(logger))
+	logger.Printf("server exited: %v", err)
+	return err
 }

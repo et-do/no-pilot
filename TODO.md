@@ -94,6 +94,6 @@ No VS Code dependency — works as a standalone MCP server.
 
 - [x] Config loading (`internal/config`) — user + project YAML, merge, policy check
 - [x] Server bootstrap (`internal/server`) — `mcp-go` MCPServer wired to stdio
-- [ ] Policy middleware — shared `enforce(cfg, toolName, path)` helper used by every tool handler
-- [ ] Deny pattern matching — glob matching for `deny_patterns` (e.g. `path/filepath.Match` or `doublestar`)
+- [x] Policy middleware — shared `enforce(cfg, toolName, path)` helper used by every tool handler
+- [x] Deny pattern matching — glob matching for `deny_patterns` (e.g. `path/filepath.Match` or `doublestar`)
 - [ ] Integration test harness — in-process client helpers shared across tool test files

@@ -9,9 +9,10 @@ OUTDIR  := bin
 build:
 	go build $(LDFLAGS) -o $(OUTDIR)/$(BINARY) .
 
-## install: build and install to /usr/local/bin (use inside the devcontainer to hot-reload during development)
+## install: build and install to $GOPATH/bin and /usr/local/bin
 install:
-	go build $(LDFLAGS) -o /usr/local/bin/$(BINARY) .
+	go install $(LDFLAGS) .
+	sudo cp $(GOPATH)/bin/$(BINARY) /usr/local/bin/$(BINARY)
 
 ## build-all: cross-compile for all distribution targets
 build-all:
@@ -29,7 +30,7 @@ lint:
 test:
 	go test -race -count=1 ./...
 
-## run: build and start the MCP server (stdio)
+## run: build and start the MCP server (stdio) — for manual smoke-testing; pipe JSON-RPC to stdin
 run: build
 	./$(OUTDIR)/$(BINARY)
 
