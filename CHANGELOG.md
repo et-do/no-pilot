@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/et-do/no-pilot/compare/v1.0.0...v1.0.1) (2026-04-24)
+
+
+### Bug Fixes
+
+* trigger release ([#5](https://github.com/et-do/no-pilot/issues/5)) ([3b8e47d](https://github.com/et-do/no-pilot/commit/3b8e47daa1f2230f50b45c5a68a994c5cf391374))
+
 ## 1.0.0 (2026-04-24)
 
 
