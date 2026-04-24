@@ -146,18 +146,18 @@ Place a `.no-pilot.yaml` file in your repo root to set project-level policy. Pro
 
 ```yaml
 tools:
-  read/readFile:
+  read_readFile:
     allowed: true
     deny_paths:
       - '**/secrets/**'
       - '**/*.key'
 
-  read/listDirectory:
+  read_listDirectory:
     allowed: true
     deny_paths:
       - '**/secrets/**'
 
-  execute/runInTerminal:
+  execute_runInTerminal:
     allowed: true
     allow_commands:
       - 'go build *'
@@ -167,7 +167,7 @@ tools:
       - 'rm *'
       - 'curl *'
 
-  search/grepSearch:
+  search_grepSearch:
     allowed: true
     deny_paths:
       - '**/secrets/**'

@@ -13,7 +13,7 @@ import (
 	"github.com/mark3labs/mcp-go/server"
 )
 
-const toolProblems = "read/problems"
+const toolProblems = "read_problems"
 
 var problemsTool = mcp.NewTool(
 	toolProblems,

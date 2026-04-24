@@ -41,7 +41,7 @@ func defaultConfig(t *testing.T) *config.Config {
 func callRunInTerminal(t *testing.T, c *client.Client, cmd string) *mcp.CallToolResult {
 	t.Helper()
 	req := mcp.CallToolRequest{}
-	req.Params.Name = "execute/runInTerminal"
+	req.Params.Name = "execute_runInTerminal"
 	req.Params.Arguments = map[string]any{"command": cmd}
 	result, err := c.CallTool(context.Background(), req)
 	if err != nil {
@@ -91,7 +91,7 @@ func TestRunInTerminal_toolDeniedByPolicy(t *testing.T) {
 	f := false
 	cfg := &config.Config{
 		Tools: map[string]config.ToolPolicy{
-			"execute/runInTerminal": {Allowed: &f},
+			"execute_runInTerminal": {Allowed: &f},
 		},
 	}
 	c := newClient(t, cfg)
@@ -105,7 +105,7 @@ func TestRunInTerminal_denyCommandsBlocks(t *testing.T) {
 	f := true
 	cfg := &config.Config{
 		Tools: map[string]config.ToolPolicy{
-			"execute/runInTerminal": {
+			"execute_runInTerminal": {
 				Allowed:      &f,
 				DenyCommands: []string{"rm *"},
 			},
@@ -122,7 +122,7 @@ func TestRunInTerminal_allowCommandsAllowsOnlyListed(t *testing.T) {
 	f := true
 	cfg := &config.Config{
 		Tools: map[string]config.ToolPolicy{
-			"execute/runInTerminal": {
+			"execute_runInTerminal": {
 				Allowed:       &f,
 				AllowCommands: []string{"echo *"},
 			},

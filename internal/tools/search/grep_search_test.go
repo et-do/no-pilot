@@ -48,7 +48,7 @@ func buildTestServer(cfg *config.Config) *server.MCPServer {
 func callGrepSearch(t *testing.T, c *client.Client, args map[string]any) *mcp.CallToolResult {
 	t.Helper()
 	req := mcp.CallToolRequest{}
-	req.Params.Name = "search/grepSearch"
+	req.Params.Name = "search_grepSearch"
 	req.Params.Arguments = args
 	result, err := c.CallTool(context.Background(), req)
 	if err != nil {

@@ -34,7 +34,7 @@ func writeDir(t *testing.T, path string, files ...string) {
 func callListDirectory(t *testing.T, c *client.Client, args map[string]any) *mcp.CallToolResult {
 	t.Helper()
 	req := mcp.CallToolRequest{}
-	req.Params.Name = "read/listDirectory"
+	req.Params.Name = "read_listDirectory"
 	req.Params.Arguments = args
 	result, err := c.CallTool(context.Background(), req)
 	if err != nil {
@@ -106,7 +106,7 @@ func TestListDirectory_toolDeniedByPolicy(t *testing.T) {
 	f := false
 	cfg := &config.Config{
 		Tools: map[string]config.ToolPolicy{
-			"read/listDirectory": {Allowed: &f},
+			"read_listDirectory": {Allowed: &f},
 		},
 	}
 	dir := t.TempDir()
@@ -122,7 +122,7 @@ func TestListDirectory_denyPathBlocked(t *testing.T) {
 	f := true
 	cfg := &config.Config{
 		Tools: map[string]config.ToolPolicy{
-			"read/listDirectory": {
+			"read_listDirectory": {
 				Allowed:   &f,
 				DenyPaths: []string{"**/private/**"},
 			},
@@ -142,7 +142,7 @@ func TestListDirectory_denyPathAllowsOtherDirs(t *testing.T) {
 	f := true
 	cfg := &config.Config{
 		Tools: map[string]config.ToolPolicy{
-			"read/listDirectory": {
+			"read_listDirectory": {
 				Allowed:   &f,
 				DenyPaths: []string{"**/private/**"},
 			},

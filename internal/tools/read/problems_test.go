@@ -14,7 +14,7 @@ import (
 func callProblems(t *testing.T, c *client.Client, args map[string]any) *mcp.CallToolResult {
 	t.Helper()
 	req := mcp.CallToolRequest{}
-	req.Params.Name = "read/problems"
+	req.Params.Name = "read_problems"
 	req.Params.Arguments = args
 	result, err := c.CallTool(context.Background(), req)
 	if err != nil {
