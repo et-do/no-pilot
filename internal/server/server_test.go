@@ -86,7 +86,7 @@ func TestBuild_toolListContainsReadFile(t *testing.T) {
 		t.Fatalf("ListTools() error = %v", err)
 	}
 	for _, tool := range tools.Tools {
-		if tool.Name == "read/readFile" {
+		if tool.Name == "read_readFile" {
 			return
 		}
 	}

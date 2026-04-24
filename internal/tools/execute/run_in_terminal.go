@@ -12,7 +12,7 @@ import (
 	"github.com/mark3labs/mcp-go/server"
 )
 
-const toolRunInTerminal = "execute/runInTerminal"
+const toolRunInTerminal = "execute_runInTerminal"
 
 var runInTerminalTool = mcp.NewTool(
 	toolRunInTerminal,

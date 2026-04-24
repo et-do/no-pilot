@@ -41,7 +41,7 @@ func makeReq(args map[string]any) mcp.CallToolRequest {
 
 func TestEnforce_allowedByDefault(t *testing.T) {
 	cfg := &config.Config{} // no policy → default allow
-	mw := policy.Enforce(cfg, "read/readFile")
+	mw := policy.Enforce(cfg, "read_readFile")
 
 	result, err := apply(mw, makeReq(nil))
 	if err != nil {
@@ -53,8 +53,8 @@ func TestEnforce_allowedByDefault(t *testing.T) {
 }
 
 func TestEnforce_explicitlyAllowed(t *testing.T) {
-	cfg := cfgWith("read/readFile", config.ToolPolicy{Allowed: allowBool(true)})
-	mw := policy.Enforce(cfg, "read/readFile")
+	cfg := cfgWith("read_readFile", config.ToolPolicy{Allowed: allowBool(true)})
+	mw := policy.Enforce(cfg, "read_readFile")
 
 	result, err := apply(mw, makeReq(nil))
 	if err != nil {
@@ -66,8 +66,8 @@ func TestEnforce_explicitlyAllowed(t *testing.T) {
 }
 
 func TestEnforce_denied(t *testing.T) {
-	cfg := cfgWith("execute/runInTerminal", config.ToolPolicy{Allowed: allowBool(false)})
-	mw := policy.Enforce(cfg, "execute/runInTerminal")
+	cfg := cfgWith("execute_runInTerminal", config.ToolPolicy{Allowed: allowBool(false)})
+	mw := policy.Enforce(cfg, "execute_runInTerminal")
 
 	result, err := apply(mw, makeReq(nil))
 	if err != nil {
@@ -79,8 +79,8 @@ func TestEnforce_denied(t *testing.T) {
 }
 
 func TestEnforce_deniedToolDoesNotCallNext(t *testing.T) {
-	cfg := cfgWith("execute/runInTerminal", config.ToolPolicy{Allowed: allowBool(false)})
-	mw := policy.Enforce(cfg, "execute/runInTerminal")
+	cfg := cfgWith("execute_runInTerminal", config.ToolPolicy{Allowed: allowBool(false)})
+	mw := policy.Enforce(cfg, "execute_runInTerminal")
 
 	called := false
 	sentinel := func(_ context.Context, _ mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -97,8 +97,8 @@ func TestEnforce_deniedToolDoesNotCallNext(t *testing.T) {
 // --- EnforceWithPaths ---
 
 func TestEnforceWithPaths_noDenyPaths_passes(t *testing.T) {
-	cfg := cfgWith("read/readFile", config.ToolPolicy{Allowed: allowBool(true)})
-	mw := policy.EnforceWithPaths(cfg, "read/readFile", "path")
+	cfg := cfgWith("read_readFile", config.ToolPolicy{Allowed: allowBool(true)})
+	mw := policy.EnforceWithPaths(cfg, "read_readFile", "path")
 
 	result, err := apply(mw, makeReq(map[string]any{"path": "/home/user/code/main.go"}))
 	if err != nil {
@@ -110,11 +110,11 @@ func TestEnforceWithPaths_noDenyPaths_passes(t *testing.T) {
 }
 
 func TestEnforceWithPaths_denyPathBlocks(t *testing.T) {
-	cfg := cfgWith("read/readFile", config.ToolPolicy{
+	cfg := cfgWith("read_readFile", config.ToolPolicy{
 		Allowed:   allowBool(true),
 		DenyPaths: []string{"**/.env", "**/secrets/**"},
 	})
-	mw := policy.EnforceWithPaths(cfg, "read/readFile", "path")
+	mw := policy.EnforceWithPaths(cfg, "read_readFile", "path")
 
 	cases := []struct {
 		path    string
@@ -139,11 +139,11 @@ func TestEnforceWithPaths_denyPathBlocks(t *testing.T) {
 
 func TestEnforceWithPaths_toolDeniedIgnoresPaths(t *testing.T) {
 	// Even if the path would be fine, a denied tool stops immediately.
-	cfg := cfgWith("read/readFile", config.ToolPolicy{
+	cfg := cfgWith("read_readFile", config.ToolPolicy{
 		Allowed:   allowBool(false),
 		DenyPaths: []string{},
 	})
-	mw := policy.EnforceWithPaths(cfg, "read/readFile", "path")
+	mw := policy.EnforceWithPaths(cfg, "read_readFile", "path")
 
 	result, err := apply(mw, makeReq(map[string]any{"path": "/workspace/ok.go"}))
 	if err != nil {
@@ -156,11 +156,11 @@ func TestEnforceWithPaths_toolDeniedIgnoresPaths(t *testing.T) {
 
 func TestEnforceWithPaths_missingPathArgSkipped(t *testing.T) {
 	// If the path argument key is absent, enforcement is a no-op for that key.
-	cfg := cfgWith("read/readFile", config.ToolPolicy{
+	cfg := cfgWith("read_readFile", config.ToolPolicy{
 		Allowed:   allowBool(true),
 		DenyPaths: []string{"**/.env"},
 	})
-	mw := policy.EnforceWithPaths(cfg, "read/readFile", "path")
+	mw := policy.EnforceWithPaths(cfg, "read_readFile", "path")
 
 	// Pass args without "path" — should pass through.
 	result, err := apply(mw, makeReq(map[string]any{"other": "value"}))
@@ -173,11 +173,11 @@ func TestEnforceWithPaths_missingPathArgSkipped(t *testing.T) {
 }
 
 func TestEnforceWithPaths_nonStringPathArgSkipped(t *testing.T) {
-	cfg := cfgWith("read/readFile", config.ToolPolicy{
+	cfg := cfgWith("read_readFile", config.ToolPolicy{
 		Allowed:   allowBool(true),
 		DenyPaths: []string{"**/.env"},
 	})
-	mw := policy.EnforceWithPaths(cfg, "read/readFile", "path")
+	mw := policy.EnforceWithPaths(cfg, "read_readFile", "path")
 
 	// Non-string value for "path" should be skipped gracefully.
 	result, err := apply(mw, makeReq(map[string]any{"path": 42}))
@@ -191,11 +191,11 @@ func TestEnforceWithPaths_nonStringPathArgSkipped(t *testing.T) {
 
 func TestEnforceWithPaths_invalidPatternSkipped(t *testing.T) {
 	// A syntactically invalid glob pattern must not crash; it is silently skipped.
-	cfg := cfgWith("read/readFile", config.ToolPolicy{
+	cfg := cfgWith("read_readFile", config.ToolPolicy{
 		Allowed:   allowBool(true),
 		DenyPaths: []string{"[invalid"}, // unclosed bracket → bad pattern
 	})
-	mw := policy.EnforceWithPaths(cfg, "read/readFile", "path")
+	mw := policy.EnforceWithPaths(cfg, "read_readFile", "path")
 
 	result, err := apply(mw, makeReq(map[string]any{"path": "/workspace/main.go"}))
 	if err != nil {
@@ -230,8 +230,8 @@ func TestEnforceWithPaths_multiplePathArgs(t *testing.T) {
 // --- EnforceWithCommand ---
 
 func TestEnforceWithCommand_noRestrictions_passes(t *testing.T) {
-	cfg := cfgWith("execute/runInTerminal", config.ToolPolicy{Allowed: allowBool(true)})
-	mw := policy.EnforceWithCommand(cfg, "execute/runInTerminal", "command")
+	cfg := cfgWith("execute_runInTerminal", config.ToolPolicy{Allowed: allowBool(true)})
+	mw := policy.EnforceWithCommand(cfg, "execute_runInTerminal", "command")
 
 	result, err := apply(mw, makeReq(map[string]any{"command": "go build ./..."}))
 	if err != nil {
@@ -243,11 +243,11 @@ func TestEnforceWithCommand_noRestrictions_passes(t *testing.T) {
 }
 
 func TestEnforceWithCommand_allowListPermits(t *testing.T) {
-	cfg := cfgWith("execute/runInTerminal", config.ToolPolicy{
+	cfg := cfgWith("execute_runInTerminal", config.ToolPolicy{
 		Allowed:       allowBool(true),
 		AllowCommands: []string{"go *", "git *", "make *"},
 	})
-	mw := policy.EnforceWithCommand(cfg, "execute/runInTerminal", "command")
+	mw := policy.EnforceWithCommand(cfg, "execute_runInTerminal", "command")
 
 	result, err := apply(mw, makeReq(map[string]any{"command": "go test ./..."}))
 	if err != nil {
@@ -259,11 +259,11 @@ func TestEnforceWithCommand_allowListPermits(t *testing.T) {
 }
 
 func TestEnforceWithCommand_allowListBlocks(t *testing.T) {
-	cfg := cfgWith("execute/runInTerminal", config.ToolPolicy{
+	cfg := cfgWith("execute_runInTerminal", config.ToolPolicy{
 		Allowed:       allowBool(true),
 		AllowCommands: []string{"go *", "git *"},
 	})
-	mw := policy.EnforceWithCommand(cfg, "execute/runInTerminal", "command")
+	mw := policy.EnforceWithCommand(cfg, "execute_runInTerminal", "command")
 
 	result, err := apply(mw, makeReq(map[string]any{"command": "npm install"}))
 	if err != nil {
@@ -275,11 +275,11 @@ func TestEnforceWithCommand_allowListBlocks(t *testing.T) {
 }
 
 func TestEnforceWithCommand_denyListBlocks(t *testing.T) {
-	cfg := cfgWith("execute/runInTerminal", config.ToolPolicy{
+	cfg := cfgWith("execute_runInTerminal", config.ToolPolicy{
 		Allowed:      allowBool(true),
 		DenyCommands: []string{"rm -rf *", "sudo *"},
 	})
-	mw := policy.EnforceWithCommand(cfg, "execute/runInTerminal", "command")
+	mw := policy.EnforceWithCommand(cfg, "execute_runInTerminal", "command")
 
 	result, err := apply(mw, makeReq(map[string]any{"command": "sudo apt install curl"}))
 	if err != nil {
@@ -292,12 +292,12 @@ func TestEnforceWithCommand_denyListBlocks(t *testing.T) {
 
 func TestEnforceWithCommand_denyEvaluatedAfterAllow(t *testing.T) {
 	// Command matches allow_commands but also matches deny_commands → denied.
-	cfg := cfgWith("execute/runInTerminal", config.ToolPolicy{
+	cfg := cfgWith("execute_runInTerminal", config.ToolPolicy{
 		Allowed:       allowBool(true),
 		AllowCommands: []string{"go *"},
 		DenyCommands:  []string{"go generate *"},
 	})
-	mw := policy.EnforceWithCommand(cfg, "execute/runInTerminal", "command")
+	mw := policy.EnforceWithCommand(cfg, "execute_runInTerminal", "command")
 
 	result, err := apply(mw, makeReq(map[string]any{"command": "go generate ./..."}))
 	if err != nil {
@@ -309,11 +309,11 @@ func TestEnforceWithCommand_denyEvaluatedAfterAllow(t *testing.T) {
 }
 
 func TestEnforceWithCommand_missingArgSkipped(t *testing.T) {
-	cfg := cfgWith("execute/runInTerminal", config.ToolPolicy{
+	cfg := cfgWith("execute_runInTerminal", config.ToolPolicy{
 		Allowed:      allowBool(true),
 		DenyCommands: []string{"rm *"},
 	})
-	mw := policy.EnforceWithCommand(cfg, "execute/runInTerminal", "command")
+	mw := policy.EnforceWithCommand(cfg, "execute_runInTerminal", "command")
 
 	result, err := apply(mw, makeReq(map[string]any{"other": "value"}))
 	if err != nil {
@@ -325,8 +325,8 @@ func TestEnforceWithCommand_missingArgSkipped(t *testing.T) {
 }
 
 func TestEnforceWithCommand_toolDenied(t *testing.T) {
-	cfg := cfgWith("execute/runInTerminal", config.ToolPolicy{Allowed: allowBool(false)})
-	mw := policy.EnforceWithCommand(cfg, "execute/runInTerminal", "command")
+	cfg := cfgWith("execute_runInTerminal", config.ToolPolicy{Allowed: allowBool(false)})
+	mw := policy.EnforceWithCommand(cfg, "execute_runInTerminal", "command")
 
 	result, err := apply(mw, makeReq(map[string]any{"command": "go build ./..."}))
 	if err != nil {

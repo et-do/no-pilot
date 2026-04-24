@@ -29,7 +29,7 @@ func writeFile(t *testing.T, path, content string) {
 func callReadFile(t *testing.T, c *client.Client, args map[string]any) *mcp.CallToolResult {
 	t.Helper()
 	req := mcp.CallToolRequest{}
-	req.Params.Name = "read/readFile"
+	req.Params.Name = "read_readFile"
 	req.Params.Arguments = args
 	result, err := c.CallTool(context.Background(), req)
 	if err != nil {
@@ -63,7 +63,7 @@ func TestReadFile_registeredAsTool(t *testing.T) {
 	}
 
 	for _, tool := range resp.Tools {
-		if tool.Name == "read/readFile" {
+		if tool.Name == "read_readFile" {
 			return // found
 		}
 	}
@@ -242,7 +242,7 @@ func TestReadFile_toolDeniedByPolicy(t *testing.T) {
 	f := false
 	cfg := &config.Config{
 		Tools: map[string]config.ToolPolicy{
-			"read/readFile": {Allowed: &f},
+			"read_readFile": {Allowed: &f},
 		},
 	}
 
@@ -264,7 +264,7 @@ func TestReadFile_denyPathBlocked(t *testing.T) {
 	f := true
 	cfg := &config.Config{
 		Tools: map[string]config.ToolPolicy{
-			"read/readFile": {
+			"read_readFile": {
 				Allowed:   &f,
 				DenyPaths: []string{"**/.env", "**/secrets/**"},
 			},
@@ -289,7 +289,7 @@ func TestReadFile_denyPathAllowsOtherFiles(t *testing.T) {
 	f := true
 	cfg := &config.Config{
 		Tools: map[string]config.ToolPolicy{
-			"read/readFile": {
+			"read_readFile": {
 				Allowed:   &f,
 				DenyPaths: []string{"**/.env"},
 			},

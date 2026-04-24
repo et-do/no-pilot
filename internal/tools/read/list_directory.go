@@ -13,7 +13,7 @@ import (
 	"github.com/mark3labs/mcp-go/server"
 )
 
-const toolListDirectory = "read/listDirectory"
+const toolListDirectory = "read_listDirectory"
 
 var listDirectoryTool = mcp.NewTool(
 	toolListDirectory,

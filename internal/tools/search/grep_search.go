@@ -11,7 +11,7 @@ import (
 	"github.com/mark3labs/mcp-go/server"
 )
 
-const toolGrepSearch = "search/grepSearch"
+const toolGrepSearch = "search_grepSearch"
 
 var grepSearchTool = mcp.NewTool(
 	toolGrepSearch,

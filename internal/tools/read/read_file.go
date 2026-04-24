@@ -12,7 +12,7 @@ import (
 	"github.com/mark3labs/mcp-go/server"
 )
 
-const toolReadFile = "read/readFile"
+const toolReadFile = "read_readFile"
 
 var readFileTool = mcp.NewTool(
 	toolReadFile,

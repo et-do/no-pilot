@@ -58,7 +58,7 @@ func TestLoad_projectConfigDisablesTool(t *testing.T) {
 	dir := t.TempDir()
 	writeFile(t, filepath.Join(dir, ".no-pilot.yaml"), `
 tools:
-  execute/runInTerminal:
+  execute_runInTerminal:
     allowed: false
 `)
 
@@ -66,8 +66,8 @@ tools:
 	if err != nil {
 		t.Fatalf("Load() error = %v", err)
 	}
-	if cfg.Policy("execute/runInTerminal").IsAllowed() {
-		t.Error("Policy(execute/runInTerminal).IsAllowed() = true, want false")
+	if cfg.Policy("execute_runInTerminal").IsAllowed() {
+		t.Error("Policy(execute_runInTerminal).IsAllowed() = true, want false")
 	}
 }
 
@@ -79,7 +79,7 @@ func TestLoad_projectConfigSetsDenyPaths(t *testing.T) {
 	dir := t.TempDir()
 	writeFile(t, filepath.Join(dir, ".no-pilot.yaml"), `
 tools:
-  read/readFile:
+  read_readFile:
     deny_paths:
       - "**/.env"
       - "**/secrets/**"
@@ -89,9 +89,9 @@ tools:
 	if err != nil {
 		t.Fatalf("Load() error = %v", err)
 	}
-	pol := cfg.Policy("read/readFile")
+	pol := cfg.Policy("read_readFile")
 	if !pol.IsAllowed() {
-		t.Error("Policy(read/readFile).IsAllowed() = false, want true")
+		t.Error("Policy(read_readFile).IsAllowed() = false, want true")
 	}
 	want := []string{"**/.env", "**/secrets/**"}
 	if len(pol.DenyPaths) != len(want) {
@@ -113,7 +113,7 @@ func TestLoad_userDenyIsStickyOverProject(t *testing.T) {
 	// User config denies the tool.
 	writeFile(t, filepath.Join(userCfgDir, "no-pilot", "config.yaml"), `
 tools:
-  execute/runInTerminal:
+  execute_runInTerminal:
     allowed: false
 `)
 
@@ -121,7 +121,7 @@ tools:
 	projectDir := t.TempDir()
 	writeFile(t, filepath.Join(projectDir, ".no-pilot.yaml"), `
 tools:
-  execute/runInTerminal:
+  execute_runInTerminal:
     allowed: true
 `)
 
@@ -129,8 +129,8 @@ tools:
 	if err != nil {
 		t.Fatalf("Load() error = %v", err)
 	}
-	if cfg.Policy("execute/runInTerminal").IsAllowed() {
-		t.Error("Policy(execute/runInTerminal).IsAllowed() = true, want false (user deny is sticky)")
+	if cfg.Policy("execute_runInTerminal").IsAllowed() {
+		t.Error("Policy(execute_runInTerminal).IsAllowed() = true, want false (user deny is sticky)")
 	}
 }
 
@@ -142,7 +142,7 @@ func TestLoad_userPolicyAppliedWhenNoProjectConfig(t *testing.T) {
 
 	writeFile(t, filepath.Join(userCfgDir, "no-pilot", "config.yaml"), `
 tools:
-  read/readFile:
+  read_readFile:
     allowed: false
 `)
 
@@ -150,8 +150,8 @@ tools:
 	if err != nil {
 		t.Fatalf("Load() error = %v", err)
 	}
-	if cfg.Policy("read/readFile").IsAllowed() {
-		t.Error("Policy(read/readFile).IsAllowed() = true, want false (user config)")
+	if cfg.Policy("read_readFile").IsAllowed() {
+		t.Error("Policy(read_readFile).IsAllowed() = true, want false (user config)")
 	}
 }
 
@@ -163,7 +163,7 @@ func TestLoad_denyPathsUnion(t *testing.T) {
 
 	writeFile(t, filepath.Join(userCfgDir, "no-pilot", "config.yaml"), `
 tools:
-  read/readFile:
+  read_readFile:
     deny_paths:
       - "**/.env"
 `)
@@ -171,7 +171,7 @@ tools:
 	projectDir := t.TempDir()
 	writeFile(t, filepath.Join(projectDir, ".no-pilot.yaml"), `
 tools:
-  read/readFile:
+  read_readFile:
     deny_paths:
       - "**/secrets/**"
 `)
@@ -180,7 +180,7 @@ tools:
 	if err != nil {
 		t.Fatalf("Load() error = %v", err)
 	}
-	pol := cfg.Policy("read/readFile")
+	pol := cfg.Policy("read_readFile")
 	want := map[string]bool{"**/.env": true, "**/secrets/**": true}
 	if len(pol.DenyPaths) != len(want) {
 		t.Fatalf("DenyPaths len = %d, want %d; got %v", len(pol.DenyPaths), len(want), pol.DenyPaths)
@@ -200,7 +200,7 @@ func TestLoad_allowCommandsIntersection(t *testing.T) {
 
 	writeFile(t, filepath.Join(userCfgDir, "no-pilot", "config.yaml"), `
 tools:
-  execute/runInTerminal:
+  execute_runInTerminal:
     allow_commands:
       - "go *"
       - "git *"
@@ -209,7 +209,7 @@ tools:
 	projectDir := t.TempDir()
 	writeFile(t, filepath.Join(projectDir, ".no-pilot.yaml"), `
 tools:
-  execute/runInTerminal:
+  execute_runInTerminal:
     allow_commands:
       - "go *"
       - "npm *"
@@ -219,7 +219,7 @@ tools:
 	if err != nil {
 		t.Fatalf("Load() error = %v", err)
 	}
-	pol := cfg.Policy("execute/runInTerminal")
+	pol := cfg.Policy("execute_runInTerminal")
 	// Only "go *" appears in both lists.
 	if len(pol.AllowCommands) != 1 || pol.AllowCommands[0] != "go *" {
 		t.Errorf("AllowCommands = %v, want [\"go *\"] (intersection)", pol.AllowCommands)
@@ -235,14 +235,14 @@ func TestLoad_allowCommandsOneNilUsesOther(t *testing.T) {
 	// User has no allow_commands.
 	writeFile(t, filepath.Join(userCfgDir, "no-pilot", "config.yaml"), `
 tools:
-  execute/runInTerminal:
+  execute_runInTerminal:
     allowed: true
 `)
 
 	projectDir := t.TempDir()
 	writeFile(t, filepath.Join(projectDir, ".no-pilot.yaml"), `
 tools:
-  execute/runInTerminal:
+  execute_runInTerminal:
     allow_commands:
       - "go *"
       - "make *"
@@ -252,7 +252,7 @@ tools:
 	if err != nil {
 		t.Fatalf("Load() error = %v", err)
 	}
-	pol := cfg.Policy("execute/runInTerminal")
+	pol := cfg.Policy("execute_runInTerminal")
 	want := map[string]bool{"go *": true, "make *": true}
 	if len(pol.AllowCommands) != len(want) {
 		t.Fatalf("AllowCommands = %v, want %v", pol.AllowCommands, want)
