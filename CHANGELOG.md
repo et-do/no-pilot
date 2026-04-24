@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.2](https://github.com/et-do/no-pilot/compare/v1.0.1...v1.0.2) (2026-04-24)
+
+
+### Bug Fixes
+
+* add pr title action ([#9](https://github.com/et-do/no-pilot/issues/9)) ([cca2c59](https://github.com/et-do/no-pilot/commit/cca2c594136ca570493ecd0ca27fb60e03716ad5))
+
 ## [1.0.1](https://github.com/et-do/no-pilot/compare/v1.0.0...v1.0.1) (2026-04-24)
 
 
