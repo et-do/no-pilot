@@ -19,6 +19,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -27,6 +28,18 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 )
+
+// shellEscapePatterns are built-in deny patterns applied when DenyShellEscape
+// is true. They cover the most common interpreter invocations that accept a
+// -c / -e flag, allowing an arbitrary command string to run and bypass
+// deny_commands glob matching (e.g. "bash -c 'rm -rf /'").
+var shellEscapePatterns = []string{
+	"sh -c *", "bash -c *", "zsh -c *", "dash -c *", "ksh -c *", "fish -c *",
+	"python -c *", "python2 -c *", "python3 -c *",
+	"perl -e *", "perl -E *",
+	"ruby -e *",
+	"node -e *", "node --eval *", "nodejs -e *",
+}
 
 // Enforce returns a middleware that denies the tool call if the tool is not
 // allowed by the merged policy. Argument values are not checked; use
@@ -70,7 +83,12 @@ func EnforceWithPaths(cfg *config.Config, toolName string, pathArgs ...string) s
 					if !ok {
 						continue
 					}
-					if matched, pattern := matchesAny(pathStr, pol.DenyPaths); matched {
+					// Clean the path before matching so that traversal sequences
+					// (e.g. /workspace/secrets/../../etc/passwd → /etc/passwd)
+					// are resolved to the same form the OS will use, preventing
+					// deny_paths patterns from being bypassed via ".." components.
+					cleanPath := filepath.Clean(pathStr)
+					if matched, pattern := matchesAny(cleanPath, pol.DenyPaths); matched {
 						return mcp.NewToolResultError(fmt.Sprintf(
 							"path %q is denied by policy pattern %q", pathStr, pattern,
 						)), nil
@@ -110,11 +128,30 @@ func EnforceWithCommand(cfg *config.Config, toolName string, commandArg string) 
 				return next(ctx, req)
 			}
 
-			// Allowlist check: if allow_commands is set the command must match.
-			if len(pol.AllowCommands) > 0 {
-				if matched, _ := matchesAnyCmd(cmd, pol.AllowCommands); !matched {
+			// Allowlist check: command must match at least one pattern in every
+			// configured allow_commands layer (logical AND across config layers).
+			// Fall back to AllowCommands for ToolPolicy values built directly
+			// (not via config.Load) that have no AllowCommandLayers set.
+			layers := pol.AllowCommandLayers
+			if len(layers) == 0 && len(pol.AllowCommands) > 0 {
+				layers = [][]string{pol.AllowCommands}
+			}
+			for _, layer := range layers {
+				if matched, _ := matchesAnyCmd(cmd, layer); !matched {
 					return mcp.NewToolResultError(fmt.Sprintf(
 						"command %q is not permitted by policy allow_commands", cmd,
+					)), nil
+				}
+			}
+
+			// Denylist check: shell escape patterns (when deny_shell_escape is
+			// enabled) are evaluated before user-defined deny patterns. This
+			// ensures that even if an allow_commands entry permits "bash *",
+			// the hardened patterns still block "bash -c '<arbitrary command>'".
+			if pol.DenyShellEscape {
+				if matched, pattern := matchesAnyCmd(cmd, shellEscapePatterns); matched {
+					return mcp.NewToolResultError(fmt.Sprintf(
+						"command %q is blocked by deny_shell_escape (matched built-in pattern %q)", cmd, pattern,
 					)), nil
 				}
 			}
@@ -209,7 +246,9 @@ func matchesAnyCmd(cmd string, patterns []string) (matched bool, pattern string)
 }
 
 // matchesAnyURL extracts the hostname from rawURL and matches it against
-// shell-style glob patterns. Falls back to matching the raw URL string if
+// shell-style glob patterns. Patterns are matched against the hostname only,
+// not the full URL — use patterns like "*.internal" or "169.254.*" rather
+// than full URL patterns. Falls back to matching the raw string if URL
 // parsing fails or yields no host. Use for deny_urls values.
 func matchesAnyURL(rawURL string, patterns []string) (matched bool, pattern string) {
 	host := rawURL

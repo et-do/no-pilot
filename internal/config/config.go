@@ -15,6 +15,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/bmatcuk/doublestar/v4"
 	"gopkg.in/yaml.v3"
 )
 
@@ -33,7 +34,7 @@ type ToolPolicy struct {
 	// matching one of these patterns causes the call to be rejected.
 	DenyPaths []string `yaml:"deny_paths"`
 
-	// AllowCommands is a whitelist of shell command glob patterns. When set,
+	// AllowCommands is an allowlist of shell command glob patterns. When set,
 	// a command argument must match at least one pattern to be permitted.
 	AllowCommands []string `yaml:"allow_commands"`
 
@@ -42,9 +43,20 @@ type ToolPolicy struct {
 	// Deny is evaluated after Allow.
 	DenyCommands []string `yaml:"deny_commands"`
 
-	// DenyURLs is a list of URL glob patterns; any URL argument matching one
-	// of these patterns causes the call to be rejected.
+	// DenyURLs is a list of hostname glob patterns; any URL argument whose
+	// hostname matches one of these patterns causes the call to be rejected.
 	DenyURLs []string `yaml:"deny_urls"`
+
+	// DenyShellEscape, when true, blocks common interpreter invocations that
+	// accept a -c / -e flag (sh, bash, python -c, perl -e, node -e, etc.).
+	// These patterns are enforced in addition to DenyCommands and cannot be
+	// removed by a later config layer (zero-trust sticky: once true, stays true).
+	DenyShellEscape bool `yaml:"deny_shell_escape"`
+
+	// AllowCommandLayers holds the per-config-layer allow_commands lists
+	// accumulated during a multi-file merge. A command must match at least one
+	// pattern in every layer. Not parsed from YAML; populated by merge only.
+	AllowCommandLayers [][]string `yaml:"-"`
 }
 
 // IsAllowed reports whether the tool is permitted.
@@ -107,7 +119,24 @@ func loadFile(path string) (*Config, error) {
 	if err := yaml.Unmarshal(data, &cfg); err != nil {
 		return nil, fmt.Errorf("parse config %s: %w", path, err)
 	}
+	if err := validatePatterns(&cfg, path); err != nil {
+		return nil, err
+	}
 	return &cfg, nil
+}
+
+// validatePatterns checks that every deny_paths pattern in cfg is a valid
+// doublestar glob. An invalid pattern would be silently skipped at enforcement
+// time (fail-open), so we reject it at load time instead to fail-closed.
+func validatePatterns(cfg *Config, path string) error {
+	for toolName, pol := range cfg.Tools {
+		for _, p := range pol.DenyPaths {
+			if _, err := doublestar.Match(p, ""); err != nil {
+				return fmt.Errorf("config %s: tool %q: deny_paths: invalid glob pattern %q: %w", path, toolName, p, err)
+			}
+		}
+	}
+	return nil
 }
 
 // merge applies zero-trust semantics when overlaying src onto dst:
@@ -116,8 +145,9 @@ func loadFile(path string) (*Config, error) {
 //     re-enabled by a subsequent config layer.
 //   - DenyPaths, DenyCommands, DenyURLs: union — every denial from every
 //     config layer accumulates.
-//   - AllowCommands: intersection — a command must satisfy every allowlist
-//     that has been configured; if only one layer restricts, that list applies.
+//   - AllowCommands: each config layer's list is kept separately in
+//     AllowCommandLayers; a command must satisfy the allowlist from every
+//     layer that defines one.
 func merge(dst, src *Config) {
 	if len(src.Tools) == 0 {
 		return
@@ -128,7 +158,11 @@ func merge(dst, src *Config) {
 	for name, srcPol := range src.Tools {
 		dstPol, exists := dst.Tools[name]
 		if !exists {
-			dst.Tools[name] = srcPol
+			pol := srcPol
+			if len(pol.AllowCommands) > 0 {
+				pol.AllowCommandLayers = [][]string{pol.AllowCommands}
+			}
+			dst.Tools[name] = pol
 			continue
 		}
 		dst.Tools[name] = mergePolicy(dstPol, srcPol)
@@ -157,8 +191,20 @@ func mergePolicy(dst, src ToolPolicy) ToolPolicy {
 	out.DenyCommands = unionStrings(dst.DenyCommands, src.DenyCommands)
 	out.DenyURLs = unionStrings(dst.DenyURLs, src.DenyURLs)
 
-	// AllowCommands: intersection (most restrictive of both layers).
-	out.AllowCommands = intersectAllowCommands(dst.AllowCommands, src.AllowCommands)
+	// DenyShellEscape is sticky: once true in any layer it stays true.
+	if src.DenyShellEscape {
+		out.DenyShellEscape = true
+	}
+
+	// AllowCommands: accumulate layers — a command must satisfy each config
+	// layer's allowlist independently (logical AND across layers).
+	out.AllowCommandLayers = dst.AllowCommandLayers
+	if len(src.AllowCommands) > 0 {
+		newLayers := make([][]string, len(dst.AllowCommandLayers)+1)
+		copy(newLayers, dst.AllowCommandLayers)
+		newLayers[len(dst.AllowCommandLayers)] = src.AllowCommands
+		out.AllowCommandLayers = newLayers
+	}
 
 	return out
 }
@@ -185,25 +231,4 @@ func unionStrings(a, b []string) []string {
 	return out
 }
 
-// intersectAllowCommands returns the intersection of two allowlists.
-// If one side is empty (no restriction), the other side's list applies.
-// If both are set, only patterns present in both are kept.
-func intersectAllowCommands(a, b []string) []string {
-	if len(a) == 0 {
-		return append([]string(nil), b...)
-	}
-	if len(b) == 0 {
-		return append([]string(nil), a...)
-	}
-	set := make(map[string]struct{}, len(b))
-	for _, p := range b {
-		set[p] = struct{}{}
-	}
-	var out []string
-	for _, p := range a {
-		if _, ok := set[p]; ok {
-			out = append(out, p)
-		}
-	}
-	return out
-}
+
