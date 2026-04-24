@@ -22,6 +22,20 @@ Zero-trust MCP server mirroring GitHub Copilot's built-in VS Code tools, with st
 ## Quick Start
 
 <details>
+<summary><strong>VS Code Dev Container (recommended)</strong></summary>
+
+The devcontainer automatically builds and installs no-pilot inside the container and wires up `.vscode/mcp.json` so Copilot uses it immediately.
+
+1. Open the repo in VS Code and click **Reopen in Container** when prompted (or run **Dev Containers: Reopen in Container** from the Command Palette).
+2. Wait for the container to finish building — no-pilot is installed automatically.
+3. Open the Output panel (`Ctrl+Shift+U`), select `MCP: no-pilot`, and confirm the server is running and 5 tools are discovered.
+
+> [!TIP]
+> After making code changes, run `make install` in the terminal then **MCP: Restart Server → no-pilot** to reload the binary without rebuilding the container.
+
+</details>
+
+<details>
 <summary><strong>Linux / macOS</strong></summary>
 
 **1. Download and install the binary**
@@ -122,6 +136,9 @@ Open (or create) `.vscode/mcp.json` in your project, or open the user config via
 **3. Restart VS Code**
 
 Open the Output panel (`Ctrl+Shift+U`), select `MCP: no-pilot`, and confirm the server starts and tools are discovered.
+
+> [!WARNING]
+> If you are using a **VS Code Dev Container**, do not use the Windows binary in your user-level `mcp.json`. The Windows binary cannot access container filesystem paths. Use the Dev Container setup above instead — the workspace `.vscode/mcp.json` runs the Linux binary inside the container where your files are.
 
 </details>
 

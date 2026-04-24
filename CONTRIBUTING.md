@@ -33,6 +33,18 @@
 5. Ensure all checks pass and request a review.
 6. For releases, let release-please handle the process.
 
+## Local Development (devcontainer)
+
+The devcontainer automatically builds and installs the `no-pilot` binary to `/usr/local/bin/no-pilot` on creation. The workspace `.vscode/mcp.json` points Copilot at this binary so it runs inside the container with access to the workspace filesystem.
+
+After making changes to the server code, reload the binary without rebuilding the container:
+
+```sh
+make install
+```
+
+Then restart the MCP server in VS Code: **Command Palette → MCP: Restart Server → no-pilot**.
+
 ## Example Commit Messages
 
 | Prefix | Version Bump | When to use |

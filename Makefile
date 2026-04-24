@@ -3,11 +3,15 @@ VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev
 LDFLAGS := -ldflags "-X main.version=$(VERSION) -s -w"
 OUTDIR  := bin
 
-.PHONY: build build-all lint test clean run
+.PHONY: build build-all install lint test clean run
 
 ## build: compile for the current platform
 build:
 	go build $(LDFLAGS) -o $(OUTDIR)/$(BINARY) .
+
+## install: build and install to /usr/local/bin (use inside the devcontainer to hot-reload during development)
+install:
+	go build $(LDFLAGS) -o /usr/local/bin/$(BINARY) .
 
 ## build-all: cross-compile for all distribution targets
 build-all:

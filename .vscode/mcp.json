@@ -1,0 +1,8 @@
+{
+  "servers": {
+    "no-pilot": {
+      "command": "/usr/local/bin/no-pilot",
+      "args": []
+    }
+  }
+}
