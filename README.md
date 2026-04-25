@@ -61,8 +61,7 @@ The devcontainer wires up `.vscode/mcp.json` so Copilot launches the server via 
 2. Wait for the container to finish building.
 3. Open the Output panel (`Ctrl+Shift+U`), select `MCP: no-pilot`, and confirm the server is running and tools are discovered.
 
-> [!TIP]
-> After making code changes, restart the MCP server to recompile: **Command Palette → MCP: Restart Server → no-pilot**. No `make install` needed — `go run .` uses the Go build cache and is always in sync with your source.
+> **Tip:** After making code changes, restart the MCP server to recompile: **Command Palette → MCP: Restart Server → no-pilot**. No `make install` needed — `go run .` uses the Go build cache and is always in sync with your source.
 
 </details>
 
@@ -71,8 +70,7 @@ The devcontainer wires up `.vscode/mcp.json` so Copilot launches the server via 
 
 Use this setup to add no-pilot to an **existing project** that already has (or will have) a `.devcontainer/` configuration. This installs no-pilot *inside* your project's container so it is available to Copilot without any local toolchain dependencies on the host.
 
-> [!IMPORTANT]
-> VS Code attaches to the container and tries to start MCP servers before `postCreateCommand` finishes. If the binary is not already in the image at that point, the server fails to start. The recommended fix is to install no-pilot during the **image build** so it is always present when the container opens.
+> **Important:** VS Code attaches to the container and tries to start MCP servers before `postCreateCommand` finishes. If the binary is not already in the image at that point, the server fails to start. The recommended fix is to install no-pilot during the **image build** so it is always present when the container opens.
 
 ---
 
@@ -188,15 +186,13 @@ Open (or create) `.vscode/mcp.json` in your project:
 }
 ```
 
-> [!IMPORTANT]
-> Use a shell wrapper (`/bin/sh -c "cd ... && go run ."`) rather than pointing directly at a pre-built binary. VS Code starts the MCP server immediately on window attach — potentially before any build scripts finish — which causes `ENOENT` errors if the binary is not yet on disk. `go run .` compiles on demand using the Go build cache and is always ready.
+> **Important:** Use a shell wrapper (`/bin/sh -c "cd ... && go run ."`) rather than pointing directly at a pre-built binary. VS Code starts the MCP server immediately on window attach — potentially before any build scripts finish — which causes `ENOENT` errors if the binary is not yet on disk. `go run .` compiles on demand using the Go build cache and is always ready.
 
 **2. Open the Output panel**
 
 Press `Ctrl+Shift+U`, select `MCP: no-pilot`, and confirm the server starts and tools are discovered.
 
-> [!TIP]
-> After making source changes, restart the MCP server to recompile: **Command Palette → MCP: Restart Server → no-pilot**.
+> **Tip:** After making source changes, restart the MCP server to recompile: **Command Palette → MCP: Restart Server → no-pilot**.
 
 </details>
 
@@ -244,8 +240,7 @@ Open (or create) `.vscode/mcp.json` in your project, or open the user config via
 }
 ```
 
-> [!TIP]
-> VS Code does not expand `~` in the command path — use the full absolute path.
+> **Tip:** VS Code does not expand `~` in the command path — use the full absolute path.
 
 **3. Restart VS Code**
 
@@ -280,8 +275,7 @@ Then add `%USERPROFILE%\bin` to your PATH:
 [Environment]::SetEnvironmentVariable("Path", $env:Path + ";$env:USERPROFILE\bin", "User")
 ```
 
-> [!NOTE]
-> Restart your terminal after updating PATH for the change to take effect.
+> **Note:** Restart your terminal after updating PATH for the change to take effect.
 
 **2. Add no-pilot to VS Code MCP config**
 
@@ -302,8 +296,7 @@ Open (or create) `.vscode/mcp.json` in your project, or open the user config via
 
 Open the Output panel (`Ctrl+Shift+U`), select `MCP: no-pilot`, and confirm the server starts and tools are discovered.
 
-> [!WARNING]
-> If you are using a **VS Code Dev Container**, do not use the Windows binary in your user-level `mcp.json`. The Windows binary cannot access container filesystem paths. Use the Dev Container setup above instead — the workspace `.vscode/mcp.json` runs the server inside the container where your files are.
+> **Warning:** If you are using a **VS Code Dev Container**, do not use the Windows binary in your user-level `mcp.json`. The Windows binary cannot access container filesystem paths. Use the Dev Container setup above instead — the workspace `.vscode/mcp.json` runs the server inside the container where your files are.
 
 </details>
 
@@ -373,8 +366,7 @@ tools:
 <details>
 <summary><strong>How user and project configs merge (zero-trust rules)</strong></summary>
 
-> [!IMPORTANT]
-> These rules are designed so that restrictions can only tighten, never loosen, as configs layer on top of each other.
+> **Important:** These rules are designed so that restrictions can only tighten, never loosen, as configs layer on top of each other.
 
 - **`allowed: false` is sticky** — a tool disabled at the user level cannot be re-enabled by a project config.
 - **Deny lists union** — every denied path, command, or URL from every config layer accumulates.
