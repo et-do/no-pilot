@@ -40,6 +40,54 @@ By default, Copilot's built-in tools give the agent unrestricted access to your 
 | Explicit allow over implicit deny | `allow_commands` blocks everything not explicitly listed when set |
 | Deny overrides allow | `deny_commands` and `deny_shell_escape` are evaluated after `allow_commands`; a denied pattern always wins |
 
+### Layered control with VS Code Custom Agents
+
+You can add a second control layer by using [VS Code Custom Agents](https://code.visualstudio.com/docs/copilot/customization/custom-agents) with explicit tool lists.
+
+- **Custom Agent tools** define what the agent is *allowed to request* in a given workflow/persona.
+- **no-pilot policy** defines what the MCP server will *actually execute*.
+
+Use both together:
+
+- Agent-level restriction reduces blast radius for day-to-day use (for example: planning agent = read/search only).
+- Server-level policy in no-pilot remains the hard enforcement boundary if an agent prompt, tool list, or handoff is misconfigured.
+
+This gives you reusable agent personas with tighter defaults while keeping zero-trust enforcement at execution time.
+
+#### Example: create a read-only planning agent in your repo
+
+1. Create `.github/agents/planner.agent.md`.
+2. Add frontmatter with a restricted tool list.
+3. Add body instructions for planning-only behavior.
+
+```md
+---
+name: Planner
+description: Generate implementation plans only; do not modify files.
+tools: ["read/*", "search/*", "no-pilot/read_*", "no-pilot/search_*"]
+---
+
+You are a planning-only agent.
+
+- Collect relevant code context.
+- Propose a step-by-step implementation plan.
+- Do not call edit or execute tools.
+```
+
+> **Important:** Custom Agent tool lists improve safety and reusability, but they are not a substitute for server-side policy. Keep no-pilot restrictions in `.no-pilot.yaml` as the authoritative control.
+
+> **Tip:** You can create these files from VS Code with **Chat: New Custom Agent** or from the Chat Customizations editor. Workspace agents are typically stored in `.github/agents`.
+
+#### Generate a custom agent with AI (quick path)
+
+You can generate agents directly in chat instead of writing frontmatter by hand:
+
+- In Agent mode, run `/create-agent` and describe the role (for example, "security review agent").
+- You can also extract one from an existing conversation by asking: "make an agent for this kind of task".
+- In Chat Customizations, use **Generate Agent** from the dropdown.
+
+Reference: [VS Code Custom Agents docs](https://code.visualstudio.com/docs/copilot/customization/custom-agents).
+
 ### Threat 2 — Data leakage to cloud AI services (requires separate action)
 
 Whether or not you use no-pilot, your code and prompts may be sent to and stored by cloud AI providers. no-pilot runs entirely locally and has no telemetry, but it does not control what Copilot itself sends upstream. Address this separately:
@@ -53,7 +101,7 @@ Whether or not you use no-pilot, your code and prompts may be sent to and stored
 ## Quick Start
 
 <details>
-<summary><strong>VS Code Dev Container (recommended)</strong></summary>
+<summary><strong>Contributing - VS Code Dev Container</strong></summary>
 
 The devcontainer wires up `.vscode/mcp.json` so Copilot launches the server via `go run .` on demand — no pre-built binary required.
 
@@ -129,6 +177,36 @@ Create (or add to) `.vscode/mcp.json` in your project root:
 ```
 
 Commit this file so everyone on the team gets the MCP server automatically when they open the devcontainer.
+
+**Alternative — configure MCP directly in `devcontainer.json`**
+
+VS Code also supports putting MCP config under `customizations.vscode.mcp` in your dev container config. This is valid for no-pilot too:
+
+```json
+{
+  "customizations": {
+    "vscode": {
+      "mcp": {
+        "servers": {
+          "no-pilot": {
+            "type": "stdio",
+            "command": "/usr/local/bin/no-pilot",
+            "args": []
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+This only declares server configuration. The command still has to exist inside the container. You still need **Step 1** (install no-pilot in the image or via postCreateCommand).
+
+If no-pilot is not installed in the container filesystem, startup will fail with a command-not-found/ENOENT error.
+
+> References:
+> - [Add and manage MCP servers](https://code.visualstudio.com/docs/copilot/customization/mcp-servers)
+> - [MCP configuration reference](https://code.visualstudio.com/docs/copilot/reference/mcp-configuration)
 
 ---
 
