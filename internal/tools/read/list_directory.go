@@ -26,7 +26,7 @@ var listDirectoryTool = mcp.NewTool(
 	),
 )
 
-func registerListDirectory(s *server.MCPServer, cfg *config.Config) {
+func registerListDirectory(s *server.MCPServer, cfg config.Provider) {
 	s.AddTool(listDirectoryTool, policy.EnforceWithPaths(cfg, toolListDirectory, "path")(handleListDirectory))
 }
 

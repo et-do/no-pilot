@@ -45,7 +45,7 @@ var shellEscapePatterns = []string{
 // allowed by the merged policy. Argument values are not checked; use
 // EnforceWithPaths, EnforceWithCommand, or EnforceWithURL for tools that
 // accept constrained arguments.
-func Enforce(cfg *config.Config, toolName string) server.ToolHandlerMiddleware {
+func Enforce(cfg config.Provider, toolName string) server.ToolHandlerMiddleware {
 	return func(next server.ToolHandlerFunc) server.ToolHandlerFunc {
 		return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			if result := checkAllowed(cfg, toolName); result != nil {
@@ -64,7 +64,7 @@ func Enforce(cfg *config.Config, toolName string) server.ToolHandlerMiddleware {
 // deny_paths (e.g. "path", "filePath"). Arguments that are absent or not
 // strings are skipped silently — mandatory argument validation is left to the
 // tool handler itself.
-func EnforceWithPaths(cfg *config.Config, toolName string, pathArgs ...string) server.ToolHandlerMiddleware {
+func EnforceWithPaths(cfg config.Provider, toolName string, pathArgs ...string) server.ToolHandlerMiddleware {
 	return func(next server.ToolHandlerFunc) server.ToolHandlerFunc {
 		return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			if result := checkAllowed(cfg, toolName); result != nil {
@@ -110,7 +110,7 @@ func EnforceWithPaths(cfg *config.Config, toolName string, pathArgs ...string) s
 //
 // commandArg is the argument key whose value holds the shell command string
 // (e.g. "command"). A missing or non-string argument is skipped silently.
-func EnforceWithCommand(cfg *config.Config, toolName string, commandArg string) server.ToolHandlerMiddleware {
+func EnforceWithCommand(cfg config.Provider, toolName string, commandArg string) server.ToolHandlerMiddleware {
 	return func(next server.ToolHandlerFunc) server.ToolHandlerFunc {
 		return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			if result := checkAllowed(cfg, toolName); result != nil {
@@ -174,7 +174,7 @@ func EnforceWithCommand(cfg *config.Config, toolName string, commandArg string) 
 //
 // urlArg is the argument key whose value holds the URL string (e.g. "url").
 // A missing or non-string argument is skipped silently.
-func EnforceWithURL(cfg *config.Config, toolName string, urlArg string) server.ToolHandlerMiddleware {
+func EnforceWithURL(cfg config.Provider, toolName string, urlArg string) server.ToolHandlerMiddleware {
 	return func(next server.ToolHandlerFunc) server.ToolHandlerFunc {
 		return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			if result := checkAllowed(cfg, toolName); result != nil {
@@ -204,7 +204,7 @@ func EnforceWithURL(cfg *config.Config, toolName string, urlArg string) server.T
 
 // checkAllowed returns a denial result if the tool is not allowed, or nil if
 // the call may proceed.
-func checkAllowed(cfg *config.Config, toolName string) *mcp.CallToolResult {
+func checkAllowed(cfg config.Provider, toolName string) *mcp.CallToolResult {
 	if !cfg.Policy(toolName).IsAllowed() {
 		return mcp.NewToolResultError(fmt.Sprintf("tool %q is disabled by policy", toolName))
 	}

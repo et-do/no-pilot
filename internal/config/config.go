@@ -19,6 +19,13 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// Provider is the interface satisfied by both *Config (static snapshot) and
+// *Watcher (live-reloading). All policy middleware and tool registration
+// functions accept Provider so the server can be built against either.
+type Provider interface {
+	Policy(tool string) ToolPolicy
+}
+
 // Config holds the merged no-pilot policy.
 type Config struct {
 	Tools map[string]ToolPolicy `yaml:"tools"`
@@ -230,5 +237,3 @@ func unionStrings(a, b []string) []string {
 	}
 	return out
 }
-
-

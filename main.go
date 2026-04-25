@@ -43,13 +43,17 @@ func run() error {
 	}
 	logger.Printf("starting version=%s cwd=%s", version, wd)
 
-	cfg, err := config.Load(wd)
+	watcher, err := config.NewWatcher(wd, logger)
 	if err != nil {
-		return fmt.Errorf("load config: %w", err)
+		return fmt.Errorf("init config watcher: %w", err)
 	}
-	logger.Printf("config loaded")
+	defer func() {
+		if err := watcher.Close(); err != nil {
+			logger.Printf("config watcher close error: %v", err)
+		}
+	}()
 
-	s := nopilotserver.Build(cfg, version)
+	s := nopilotserver.Build(watcher, version)
 	logger.Printf("server built, listening on stdio")
 	err = server.ServeStdio(s, server.WithErrorLogger(logger))
 	logger.Printf("server exited: %v", err)

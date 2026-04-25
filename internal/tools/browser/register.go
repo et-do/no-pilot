@@ -11,7 +11,7 @@ import (
 )
 
 // Register adds all #browser tools to s using cfg for policy enforcement.
-func Register(s *server.MCPServer, cfg *config.Config) {
+func Register(s *server.MCPServer, cfg config.Provider) {
 	// TODO: implement browser/navigate, browser/click, browser/screenshot,
 	// browser/fillInput, browser/select, browser/hover, browser/scroll,
 	// browser/networkRequests, browser/console.

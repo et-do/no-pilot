@@ -11,6 +11,6 @@ import (
 )
 
 // Register adds all #search tools to s using cfg for policy enforcement.
-func Register(s *server.MCPServer, cfg *config.Config) {
+func Register(s *server.MCPServer, cfg config.Provider) {
 	registerGrepSearch(s, cfg)
 }

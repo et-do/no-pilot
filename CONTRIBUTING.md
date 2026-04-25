@@ -44,6 +44,9 @@ After making changes to the server code, restart the MCP server to recompile:
 
 **Command Palette → MCP: Restart Server → no-pilot**
 
+Policy edits are hot-reloaded automatically. Updating `.no-pilot.yaml` or the
+user config file does not require a restart.
+
 To build and install the binary explicitly (e.g. for testing the installed binary or cutting a release build):
 
 ```sh

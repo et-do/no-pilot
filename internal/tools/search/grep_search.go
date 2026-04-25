@@ -28,7 +28,7 @@ var grepSearchTool = mcp.NewTool(
 	),
 )
 
-func registerGrepSearch(s *server.MCPServer, cfg *config.Config) {
+func registerGrepSearch(s *server.MCPServer, cfg config.Provider) {
 	s.AddTool(grepSearchTool, policy.EnforceWithPaths(cfg, toolGrepSearch, "includePattern")(handleGrepSearch))
 }
 
@@ -43,11 +43,11 @@ func handleGrepSearch(_ context.Context, req mcp.CallToolRequest) (*mcp.CallTool
 		args = append(args, "--include="+pattern)
 	}
 	args = append(args, query, ".")
-	   cmd := exec.Command("grep", args...)
-	   if wd := req.GetString("workingDir", ""); wd != "" {
-		   cmd.Dir = wd
-	   }
-	   out, err := cmd.CombinedOutput()
+	cmd := exec.Command("grep", args...)
+	if wd := req.GetString("workingDir", ""); wd != "" {
+		cmd.Dir = wd
+	}
+	out, err := cmd.CombinedOutput()
 	// If grep returns nonzero but output is present, treat as success (matches found or no matches)
 	if err != nil && len(out) == 0 {
 		// Only error if grep failed and there is no output (e.g. invalid pattern)
