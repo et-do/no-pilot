@@ -20,7 +20,7 @@ executing. Tools are grouped by the same toolsets Copilot uses.
 
 ## `#search` — search the workspace
 
-- [ ] `search/fileSearch` — find files by glob pattern (mirrors `file_search`)
+- [x] `search/fileSearch` — find files by glob pattern (mirrors `file_search`)
 - [x] `search/textSearch` — full-text / regex search across files (mirrors `grep_search`)
 - [ ] `search/codebase` — semantic/embedding-based workspace search (mirrors `semantic_search`)
 - [ ] `search/changes` — list current source control changes (mirrors `get_changed_files`)

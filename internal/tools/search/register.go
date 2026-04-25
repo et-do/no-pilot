@@ -12,5 +12,6 @@ import (
 
 // Register adds all #search tools to s using cfg for policy enforcement.
 func Register(s *server.MCPServer, cfg config.Provider) {
+	registerFileSearch(s, cfg)
 	registerGrepSearch(s, cfg)
 }
