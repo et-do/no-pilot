@@ -32,7 +32,7 @@ var readFileTool = mcp.NewTool(
 )
 
 // registerReadFile adds the read/readFile tool to the server.
-func registerReadFile(s *server.MCPServer, cfg *config.Config) {
+func registerReadFile(s *server.MCPServer, cfg config.Provider) {
 	s.AddTool(readFileTool, policy.EnforceWithPaths(cfg, toolReadFile, "filePath")(handleReadFile))
 }
 

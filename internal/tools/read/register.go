@@ -11,8 +11,8 @@ import (
 )
 
 // Register adds all #read tools to s using cfg for policy enforcement.
-func Register(s *server.MCPServer, cfg *config.Config) {
+func Register(s *server.MCPServer, cfg config.Provider) {
 	registerReadFile(s, cfg)
 	registerListDirectory(s, cfg)
-    registerProblems(s, cfg)
+	registerProblems(s, cfg)
 }

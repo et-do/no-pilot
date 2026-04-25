@@ -10,7 +10,7 @@ import (
 )
 
 // Register adds all #edit tools to s using cfg for policy enforcement.
-func Register(s *server.MCPServer, cfg *config.Config) {
+func Register(s *server.MCPServer, cfg config.Provider) {
 	// TODO: implement edit/createFile, edit/replaceStringInFile,
 	// edit/insertIntoFile, edit/multiReplaceStringInFile, etc.
 	_ = s

@@ -20,7 +20,7 @@ const (
 // cfg is the merged no-pilot policy; version is injected at build time.
 // Tools are registered here; each tool handler checks the policy before
 // executing.
-func Build(cfg *config.Config, version string) *server.MCPServer {
+func Build(cfg config.Provider, version string) *server.MCPServer {
 	s := server.NewMCPServer(
 		serverName,
 		version,

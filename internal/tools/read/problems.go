@@ -24,10 +24,9 @@ var problemsTool = mcp.NewTool(
 	),
 )
 
-func registerProblems(s *server.MCPServer, cfg *config.Config) {
-	s.AddTool(problemsTool, policy.EnforceWithPaths(cfg, toolProblems, "filePaths")(handleProblems))
+func registerProblems(s *server.MCPServer, cfg config.Provider) {
+	s.AddTool(problemsTool, policy.EnforceWithPaths(cfg, toolProblems, "filePath")(handleProblems))
 }
-
 
 func handleProblems(_ context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	filePath, err := req.RequireString("filePath")

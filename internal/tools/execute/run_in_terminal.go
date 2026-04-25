@@ -23,7 +23,7 @@ var runInTerminalTool = mcp.NewTool(
 	),
 )
 
-func registerRunInTerminal(s *server.MCPServer, cfg *config.Config) {
+func registerRunInTerminal(s *server.MCPServer, cfg config.Provider) {
 	s.AddTool(runInTerminalTool, policy.EnforceWithCommand(cfg, toolRunInTerminal, "command")(handleRunInTerminal))
 }
 
