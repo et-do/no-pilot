@@ -29,7 +29,7 @@ executing. Tools are grouped by the same toolsets Copilot uses.
 
 ## `#edit` — write files and workspace structure
 
-- [ ] `edit/createFile` — create a new file with given content (mirrors `create_file`)
+- [x] `edit/createFile` — create a new file with given content (mirrors `create_file`)
 - [ ] `edit/createDirectory` — create a new directory (mirrors `create_directory`)
 - [ ] `edit/editFiles` — apply targeted string-replacement edits to one or more files (mirrors `replace_string_in_file` / `multi_replace_string_in_file`)
 - [ ] `edit/renameSymbol` — semantics-aware symbol rename across the workspace (mirrors `vscode_renameSymbol`)
