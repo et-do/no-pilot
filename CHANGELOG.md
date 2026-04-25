@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.2.0](https://github.com/et-do/no-pilot/compare/v1.1.0...v1.2.0) (2026-04-25)
+
+
+### Features
+
+* add edit/createFile tool with policy enforcement and no-overwrite semantics ([#24](https://github.com/et-do/no-pilot/issues/24)) ([0ad7aa5](https://github.com/et-do/no-pilot/commit/0ad7aa56fe089624fb2ab3c09e7c6c59c85a7b21))
+* add live policy hot-reload and provider-based enforcement ([#20](https://github.com/et-do/no-pilot/issues/20)) ([97f4858](https://github.com/et-do/no-pilot/commit/97f4858501f89bf1b5e34f2b185a3e18f38c65ad))
+* add search/fileSearch tool with glob and maxResults support ([#22](https://github.com/et-do/no-pilot/issues/22)) ([2f8924d](https://github.com/et-do/no-pilot/commit/2f8924d96c69308f964f2af645b6dfa977aed2b5))
+
+
+### Bug Fixes
+
+* enforce read_problems deny_paths using filePath arg ([2f8924d](https://github.com/et-do/no-pilot/commit/2f8924d96c69308f964f2af645b6dfa977aed2b5))
+* enforce read_problems deny_paths using filePath arg ([7c86361](https://github.com/et-do/no-pilot/commit/7c86361356c4fbd78c9baf89266c2e00c5e6a666))
+* enforce read_problems deny_paths using filePath arg ([97f4858](https://github.com/et-do/no-pilot/commit/97f4858501f89bf1b5e34f2b185a3e18f38c65ad))
+* fail closed on invalid deny_commands and deny_urls patterns  ([#21](https://github.com/et-do/no-pilot/issues/21)) ([7c86361](https://github.com/et-do/no-pilot/commit/7c86361356c4fbd78c9baf89266c2e00c5e6a666))
+
 ## [1.1.0](https://github.com/et-do/no-pilot/compare/v1.0.3...v1.1.0) (2026-04-24)
 
 
