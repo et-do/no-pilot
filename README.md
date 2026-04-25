@@ -10,7 +10,7 @@ Zero-trust MCP server mirroring GitHub Copilot's built-in VS Code tools, with st
 
 ## Overview
 
-**no-pilot** is a drop-in, zero-trust replacement for Copilot's built-in agent tools, running entirely on your infrastructure. It enforces customizable project and user policies for every tool at the system level, ensuring the Agent doesn't conviently "ignore" your prompting instructions.
+**no-pilot** is a drop-in, zero-trust replacement for Copilot's built-in agent tools, running entirely on your infrastructure. It enforces customizable project and user policies for every tool at the system level, ensuring the agent doesn't conveniently "ignore" your prompting instructions.
 
 - Mirrors Copilot's built-in VS Code tools (file read, directory list, search, terminal, etc.)
 - Enforces deny/allow patterns from user and project config files
@@ -101,7 +101,7 @@ Whether or not you use no-pilot, your code and prompts may be sent to and stored
 ## Quick Start
 
 <details>
-<summary><strong>Contributing - VS Code Dev Container</strong></summary>
+<summary><strong>This Repository &mdash; VS Code Dev Container</strong></summary>
 
 The devcontainer wires up `.vscode/mcp.json` so Copilot launches the server via `go run .` on demand — no pre-built binary required.
 
