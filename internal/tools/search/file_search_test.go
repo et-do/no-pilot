@@ -1,4 +1,3 @@
-package search
 package search_test
 
 import (
