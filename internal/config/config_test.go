@@ -329,6 +329,44 @@ tools:
 	}
 }
 
+// TestLoad_invalidDenyCommandPattern verifies that deny_commands patterns are
+// validated at load time to avoid silently ineffective deny rules.
+func TestLoad_invalidDenyCommandPattern(t *testing.T) {
+	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+
+	dir := t.TempDir()
+	writeFile(t, filepath.Join(dir, ".no-pilot.yaml"), `
+tools:
+  execute_runInTerminal:
+    deny_commands:
+      - "  "
+`)
+
+	_, err := config.Load(dir)
+	if err == nil {
+		t.Fatal("Load() error = nil, want error for invalid deny_commands pattern")
+	}
+}
+
+// TestLoad_invalidDenyURLPattern verifies that deny_urls patterns are
+// validated at load time to avoid silently ineffective deny rules.
+func TestLoad_invalidDenyURLPattern(t *testing.T) {
+	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+
+	dir := t.TempDir()
+	writeFile(t, filepath.Join(dir, ".no-pilot.yaml"), `
+tools:
+  web_fetch:
+    deny_urls:
+      - " *.internal"
+`)
+
+	_, err := config.Load(dir)
+	if err == nil {
+		t.Fatal("Load() error = nil, want error for invalid deny_urls pattern")
+	}
+}
+
 // TestLoad_denyShellEscapeIsSticky verifies that deny_shell_escape follows
 // zero-trust OR semantics: once true in any config layer it cannot be unset
 // by a subsequent layer.

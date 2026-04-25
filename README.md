@@ -313,6 +313,8 @@ Open the Output panel (`Ctrl+Shift+U`), select `MCP: no-pilot`, and confirm the 
 > Policy configuration is optional. By default no-pilot runs with no restrictions.
 > Policy file changes are hot-reloaded at runtime. Editing either user config or
 > `.no-pilot.yaml` applies updated restrictions without restarting VS Code.
+> Invalid `deny_paths`, `deny_commands`, and `deny_urls` patterns are rejected
+> at load time (fail-closed) to avoid silent policy bypass from malformed rules.
 
 Policies are configured via YAML files:
 

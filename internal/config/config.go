@@ -14,6 +14,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strings"
 
 	"github.com/bmatcuk/doublestar/v4"
 	"gopkg.in/yaml.v3"
@@ -142,8 +144,56 @@ func validatePatterns(cfg *Config, path string) error {
 				return fmt.Errorf("config %s: tool %q: deny_paths: invalid glob pattern %q: %w", path, toolName, p, err)
 			}
 		}
+		for _, p := range pol.DenyCommands {
+			if err := validateShellGlobPattern(p); err != nil {
+				return fmt.Errorf("config %s: tool %q: deny_commands: invalid pattern %q: %w", path, toolName, p, err)
+			}
+		}
+		for _, p := range pol.DenyURLs {
+			if err := validateShellGlobPattern(p); err != nil {
+				return fmt.Errorf("config %s: tool %q: deny_urls: invalid pattern %q: %w", path, toolName, p, err)
+			}
+		}
 	}
 	return nil
+}
+
+// validateShellGlobPattern verifies a shell-style glob pattern can be safely
+// interpreted by the command/URL matcher and avoids easy-to-miss mistakes.
+func validateShellGlobPattern(pattern string) error {
+	if strings.TrimSpace(pattern) == "" {
+		return errors.New("pattern must not be empty or whitespace-only")
+	}
+	if strings.TrimSpace(pattern) != pattern {
+		return errors.New("pattern must not have leading or trailing whitespace")
+	}
+	if strings.ContainsAny(pattern, "\n\r\t") {
+		return errors.New("pattern must be a single line without tabs")
+	}
+	if _, err := regexp.Compile(shellGlobRegex(pattern)); err != nil {
+		return fmt.Errorf("compile shell glob: %w", err)
+	}
+	return nil
+}
+
+func shellGlobRegex(pattern string) string {
+	var re strings.Builder
+	re.WriteString("^")
+	for _, ch := range pattern {
+		switch ch {
+		case '*':
+			re.WriteString(".*")
+		case '?':
+			re.WriteString(".")
+		case '.', '+', '(', ')', '[', ']', '{', '}', '^', '$', '|', '\\':
+			re.WriteByte('\\')
+			re.WriteRune(ch)
+		default:
+			re.WriteRune(ch)
+		}
+	}
+	re.WriteString("$")
+	return re.String()
 }
 
 // merge applies zero-trust semantics when overlaying src onto dst:
@@ -237,3 +287,5 @@ func unionStrings(a, b []string) []string {
 	}
 	return out
 }
+
+
