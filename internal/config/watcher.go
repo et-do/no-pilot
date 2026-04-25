@@ -6,9 +6,12 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"time"
 
 	"github.com/fsnotify/fsnotify"
 )
+
+const reloadDebounce = 75 * time.Millisecond
 
 // Watcher keeps a live Config snapshot and reloads it when policy files change.
 // It is safe for concurrent use by tool handlers.
@@ -87,21 +90,54 @@ func (w *Watcher) Close() error {
 func (w *Watcher) loop() {
 	defer w.wg.Done()
 
+	var (
+		timer  *time.Timer
+		timerC <-chan time.Time
+	)
+
+	scheduleReload := func() {
+		if timer == nil {
+			timer = time.NewTimer(reloadDebounce)
+			timerC = timer.C
+			return
+		}
+		if !timer.Stop() {
+			select {
+			case <-timer.C:
+			default:
+			}
+		}
+		timer.Reset(reloadDebounce)
+		timerC = timer.C
+	}
+
 	for {
 		select {
 		case <-w.done:
+			if timer != nil {
+				timer.Stop()
+			}
 			return
+		case <-timerC:
+			w.reload()
+			timerC = nil
 		case evt, ok := <-w.fsw.Events:
 			if !ok {
+				if timer != nil {
+					timer.Stop()
+				}
 				return
 			}
 			w.refreshWatchDirs()
 			if !w.isConfigEvent(evt) {
 				continue
 			}
-			w.reload()
+			scheduleReload()
 		case err, ok := <-w.fsw.Errors:
 			if !ok {
+				if timer != nil {
+					timer.Stop()
+				}
 				return
 			}
 			if w.logger != nil {
