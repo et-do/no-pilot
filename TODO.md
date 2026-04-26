@@ -11,11 +11,11 @@ executing. Tools are grouped by the same toolsets Copilot uses.
 
 - [x] `read/readFile` — read the content of a file (mirrors `read_file`)
 - [x] `read/listDirectory` — list the contents of a directory (mirrors `list_dir`)
-- [ ] `read/terminalLastCommand` — get the last terminal command and its output (mirrors `terminal_last_command`)
-- [ ] `read/terminalSelection` — get the current terminal selection (mirrors `terminal_selection`)
+- [x] `read/terminalLastCommand` — get the last terminal command and its output (mirrors `terminal_last_command`)
+- [ ] `read/terminalSelection` — get the current terminal selection (mirrors `terminal_selection`; not on the standalone-server roadmap because it requires VS Code terminal UI integration)
 - [x] `read/problems` — get workspace errors and warnings from diagnostics (mirrors `get_errors`)
-- [ ] `read/getNotebookSummary` — list notebook cells and their metadata (mirrors `copilot_getNotebookSummary`)
-- [ ] `read/readNotebookCellOutput` — read the output of a notebook cell execution (mirrors `read_notebook_cell_output`)
+- [x] `read/getNotebookSummary` — list notebook cells and their metadata (mirrors `copilot_getNotebookSummary`)
+- [x] `read/readNotebookCellOutput` — read the output of a notebook cell execution (mirrors `read_notebook_cell_output`)
 
 
 ## `#search` — search the workspace
@@ -40,9 +40,10 @@ executing. Tools are grouped by the same toolsets Copilot uses.
 ## `#execute` — run code and commands
 
 - [x] `execute/runInTerminal` — run a shell command in a terminal (mirrors `run_in_terminal`)
-- [ ] `execute/getTerminalOutput` — get output from a running async terminal session (mirrors `get_terminal_output`)
-- [ ] `execute/sendToTerminal` — send input to a persistent terminal session (mirrors `send_to_terminal`)
-- [ ] `execute/killTerminal` — terminate a terminal session (mirrors `kill_terminal`)
+- [x] `execute/listTerminals` — list tracked terminal sessions (no direct Copilot equivalent)
+- [x] `execute/getTerminalOutput` — get output from a running async terminal session, including optional byte-range reads (mirrors `get_terminal_output`)
+- [x] `execute/sendToTerminal` — send input to a persistent terminal session (mirrors `send_to_terminal`)
+- [x] `execute/killTerminal` — terminate a terminal session (mirrors `kill_terminal`)
 - [ ] `execute/runNotebookCell` — execute a notebook cell (mirrors `run_notebook_cell`)
 - [ ] `execute/createAndRunTask` — create and run a workspace task (mirrors `create_and_run_task`)
 - [ ] `execute/runTests` — run unit tests and return results (mirrors `runTests`)

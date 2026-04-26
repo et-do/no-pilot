@@ -457,11 +457,24 @@ tools:
 </details>
 
 <details>
+<summary><strong>Terminal session behavior</strong></summary>
+
+- **`execute_runInTerminal` supports per-session context.** Use optional `cwd` to set the working directory for that session and optional `env` (newline-separated `KEY=VALUE`) to add environment entries for that session only.
+- **Terminal sessions are first-class.** `execute_runInTerminal` (with `mode: 'async'` or sync timeout) returns a `terminal_id` that can be used by `execute_getTerminalOutput`, `execute_sendToTerminal`, and `execute_killTerminal`.
+- **You can list active and completed sessions.** `execute_listTerminals` returns tracked sessions with id, status, command, output byte size, and optional cwd/env metadata.
+- **Output reads can be sliced.** `execute_getTerminalOutput` supports optional `startOffset` and `endOffset` byte offsets for range reads over large terminal output.
+
+</details>
+
+<details>
 <summary><strong>Known limitations</strong></summary>
 
 - **Command matching is string-based, not executable-based.** `deny_commands: ['rm *']` blocks the string `rm -rf /`, but not `bash -c 'rm -rf /'`. Enable `deny_shell_escape: true` to block the most common `-c`/`-e` interpreter invocations. For the strictest control, disable `execute_runInTerminal` entirely with `allowed: false`.
 - **`deny_urls` matches the hostname only**, not the full URL. Use patterns like `*.internal` or `169.254.*`, not `https://evil.com/bad-path*`.
 - **Path deny patterns match the cleaned path.** `..` components in paths are resolved before matching, so traversal sequences cannot bypass a pattern. However, symlinks are not resolved.
+- **Terminal reads and follow-up execute tools only see no-pilot-managed sessions.** `read_terminalLastCommand`, `execute_getTerminalOutput`, `execute_sendToTerminal`, and `execute_killTerminal` work against terminal sessions created by `execute_runInTerminal` in this server process. They do not attach to arbitrary VS Code terminals.
+- **Notebook reads are file-based, not kernel-based.** `read_getNotebookSummary` and `read_readNotebookCellOutput` inspect persisted `.ipynb` JSON on disk, including saved cell outputs, but they do not query a live notebook kernel or unsaved editor state.
+- **`read_terminalSelection` is not on the standalone-server roadmap.** A standalone MCP server does not have reliable access to VS Code terminal UI selection state without editor-specific integration, so that capability belongs in a VS Code-side bridge rather than this server.
 
 </details>
 
