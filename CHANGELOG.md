@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.3.0](https://github.com/et-do/no-pilot/compare/v1.2.0...v1.3.0) (2026-04-26)
+
+
+### Features
+
+* add web_fetch tool with DOM extraction, caching, and selectors ([#31](https://github.com/et-do/no-pilot/issues/31)) ([fbe3e68](https://github.com/et-do/no-pilot/commit/fbe3e68438dbec9bbeabf50de34fe1850975f942))
+* **execute:** add per-session cwd/env, terminal listing, and ranged output reads ([#26](https://github.com/et-do/no-pilot/issues/26)) ([ab9537a](https://github.com/et-do/no-pilot/commit/ab9537acd759c1d966f8713e566d07d717a91a6e))
+* **execute:** add standalone notebook execution, test tooling, and t… ([#29](https://github.com/et-do/no-pilot/issues/29)) ([ff864a6](https://github.com/et-do/no-pilot/commit/ff864a6ed7a6e90c67da11db8434ba221bd5472a))
+* expand standalone MCP tool coverage and harden policy enforcement ([#28](https://github.com/et-do/no-pilot/issues/28)) ([1cb604f](https://github.com/et-do/no-pilot/commit/1cb604fb4f48f8ac2c54c0fbbb256512ffe694e9))
+* **web:** add web_fetch with guarded static extraction, selectors, and cache revalidation ([#30](https://github.com/et-do/no-pilot/issues/30)) ([3e84233](https://github.com/et-do/no-pilot/commit/3e842337c362c1fa1dcb1479d15898b3567df43c))
+
 ## [1.2.0](https://github.com/et-do/no-pilot/compare/v1.1.0...v1.2.0) (2026-04-25)
 
 
