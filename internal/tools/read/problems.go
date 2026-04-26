@@ -61,9 +61,7 @@ func handleProblems(cfg config.Provider) server.ToolHandlerFunc {
 			}
 		}
 
-		for _, line := range compileProblemsForFiles(files) {
-			problems = append(problems, line)
-		}
+		problems = append(problems, compileProblemsForFiles(files)...)
 		problems = uniqueStrings(problems)
 		if len(problems) == 0 {
 			return mcp.NewToolResultText("no problems found"), nil
