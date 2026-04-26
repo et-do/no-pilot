@@ -3,6 +3,7 @@ package read_test
 import (
 	"context"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -79,6 +80,75 @@ func TestProblems_invalidGoFile_reportsError(t *testing.T) {
 		t.Errorf("got %q, want substring %q", got, want)
 	}
 	if got, want := text, "expected ')'"; !strings.Contains(got, want) {
+		t.Errorf("got %q, want substring %q", got, want)
+	}
+}
+
+func TestProblems_directoryScan_reportsNestedErrors(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "ok.go"), []byte("package p\nfunc OK() {}\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	badPath := filepath.Join(dir, "bad.go")
+	if err := os.WriteFile(badPath, []byte("package p\nfunc Bad( {\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := defaultConfig(t)
+	c := newClient(t, cfg)
+	res := callProblems(t, c, map[string]any{"path": dir})
+	text := textContent(t, res)
+	if res.IsError {
+		t.Fatalf("unexpected error: %v", text)
+	}
+	if got, want := text, badPath; !strings.Contains(got, want) {
+		t.Errorf("got %q, want substring %q", got, want)
+	}
+}
+
+func TestProblems_pathsSet_supportsArrayStyle(t *testing.T) {
+	dir := t.TempDir()
+	okPath := filepath.Join(dir, "ok.go")
+	if err := os.WriteFile(okPath, []byte("package p\nfunc OK() {}\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	badPath := filepath.Join(dir, "bad.go")
+	if err := os.WriteFile(badPath, []byte("package p\nfunc Bad( {\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := defaultConfig(t)
+	c := newClient(t, cfg)
+	res := callProblems(t, c, map[string]any{"paths": []any{okPath, badPath}})
+	text := textContent(t, res)
+	if res.IsError {
+		t.Fatalf("unexpected error: %v", text)
+	}
+	if got, want := text, badPath; !strings.Contains(got, want) {
+		t.Errorf("got %q, want substring %q", got, want)
+	}
+}
+
+func TestProblems_reportsCompilerUndefinedName(t *testing.T) {
+	dir, err := os.MkdirTemp(".", "problems-compile-")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.RemoveAll(dir) })
+
+	badPath := filepath.Join(dir, "bad_test.go")
+	if err := os.WriteFile(badPath, []byte("package compilebad\nimport \"testing\"\nfunc TestBad(t *testing.T){ _ = missingSymbol }\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := defaultConfig(t)
+	c := newClient(t, cfg)
+	res := callProblems(t, c, map[string]any{"path": dir})
+	text := textContent(t, res)
+	if res.IsError {
+		t.Fatalf("unexpected error: %v", text)
+	}
+	if got, want := text, "undefined"; !strings.Contains(got, want) {
 		t.Errorf("got %q, want substring %q", got, want)
 	}
 }
