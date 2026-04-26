@@ -12,7 +12,5 @@ import (
 
 // Register adds all #web tools to s using cfg for policy enforcement.
 func Register(s *server.MCPServer, cfg config.Provider) {
-	// TODO: implement web/fetchWebpage.
-	_ = s
-	_ = cfg
+	registerFetch(s, cfg)
 }

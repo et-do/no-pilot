@@ -474,6 +474,7 @@ tools:
 - **Path deny patterns match the cleaned path.** `..` components in paths are resolved before matching, so traversal sequences cannot bypass a pattern. However, symlinks are not resolved.
 - **`search_codebase` is lexical, not embedding-based.** It ranks text matches by term overlap and does not perform vector/semantic retrieval.
 - **`search_usages` is textual, not language-server aware.** It finds exact symbol text matches and does not guarantee semantic definitions/references/implementations like a true IDE usage engine.
+- **`web_fetch` is static (non-browser) fetching.** It supports metadata, content-type guardrails, selector-based include/exclude extraction, and HTTP cache revalidation, but it is not a headless browser and does not execute client-side JavaScript.
 - **`edit_renameSymbol` is lexical, not language-server aware.** It applies word-boundary text replacement and does not provide semantic rename guarantees across definitions/references/implementations.
 - **Notebook edits are file-based JSON rewrites.** `edit_createNotebook` and `edit_editNotebook` modify persisted `.ipynb` content on disk and do not interact with a live notebook kernel or unsaved editor state.
 - **`execute_runTests` currently runs `go test`.** The standalone implementation is Go-focused in this repository and does not provide framework-specific adapters for every language test runner.
