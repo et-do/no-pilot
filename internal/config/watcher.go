@@ -47,7 +47,7 @@ func NewWatcher(projectDir string, logger *log.Logger) (*Watcher, error) {
 	w := &Watcher{
 		projectDir:  projectDir,
 		userCfg:     userConfigPath(),
-		projCfg:     filepath.Join(projectDir, ".no-pilot.yaml"),
+		projCfg:     filepath.Join(projectDir, ProjectPolicyFileName),
 		logger:      logger,
 		cfg:         cfg,
 		done:        make(chan struct{}),

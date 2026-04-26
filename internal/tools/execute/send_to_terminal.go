@@ -14,7 +14,7 @@ const toolSendToTerminal = "execute_sendToTerminal"
 
 var sendToTerminalTool = mcp.NewTool(
 	toolSendToTerminal,
-	mcp.WithDescription("Send a line of input to a running terminal session."),
+	mcp.WithDescription("[EXECUTE] Send a line of input to a running terminal session."),
 	mcp.WithString("id",
 		mcp.Required(),
 		mcp.Description("The terminal session id returned by execute_runInTerminal."),

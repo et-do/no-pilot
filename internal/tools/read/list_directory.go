@@ -17,7 +17,7 @@ const toolListDirectory = "read_listDirectory"
 
 var listDirectoryTool = mcp.NewTool(
 	toolListDirectory,
-	mcp.WithDescription("List the contents of a directory (files and subdirectories)."),
+	mcp.WithDescription("[READ] List the contents of a directory (files and subdirectories)."),
 	mcp.WithReadOnlyHintAnnotation(true),
 	mcp.WithDestructiveHintAnnotation(false),
 	mcp.WithString("path",

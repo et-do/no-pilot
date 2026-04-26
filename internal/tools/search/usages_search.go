@@ -20,7 +20,7 @@ const toolUsagesSearch = "search_usages"
 
 var usagesSearchTool = mcp.NewTool(
 	toolUsagesSearch,
-	mcp.WithDescription("Find textual symbol usages across files (definitions/references are not language-server aware)."),
+	mcp.WithDescription("[SEARCH] Find textual symbol usages across files (definitions/references are not language-server aware)."),
 	mcp.WithReadOnlyHintAnnotation(true),
 	mcp.WithDestructiveHintAnnotation(false),
 	mcp.WithString("symbol",

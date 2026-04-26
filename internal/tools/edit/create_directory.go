@@ -15,7 +15,7 @@ const toolCreateDirectory = "edit_createDirectory"
 
 var createDirectoryTool = mcp.NewTool(
 	toolCreateDirectory,
-	mcp.WithDescription("Create a directory and any missing parent directories."),
+	mcp.WithDescription("[EDIT] Create a directory and any missing parent directories."),
 	mcp.WithString("dirPath",
 		mcp.Required(),
 		mcp.Description("Absolute path to the directory to create."),

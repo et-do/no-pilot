@@ -17,7 +17,7 @@ const toolListTerminals = "execute_listTerminals"
 
 var listTerminalsTool = mcp.NewTool(
 	toolListTerminals,
-	mcp.WithDescription("List tracked terminal sessions."),
+	mcp.WithDescription("[EXECUTE] List tracked terminal sessions."),
 	mcp.WithReadOnlyHintAnnotation(true),
 	mcp.WithDestructiveHintAnnotation(false),
 )

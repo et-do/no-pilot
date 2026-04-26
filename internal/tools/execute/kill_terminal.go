@@ -14,7 +14,7 @@ const toolKillTerminal = "execute_killTerminal"
 
 var killTerminalTool = mcp.NewTool(
 	toolKillTerminal,
-	mcp.WithDescription("Terminate a running terminal session."),
+	mcp.WithDescription("[EXECUTE] Terminate a running terminal session."),
 	mcp.WithString("id",
 		mcp.Required(),
 		mcp.Description("The terminal session id returned by execute_runInTerminal."),

@@ -71,6 +71,82 @@ tools:
 	}
 }
 
+// TestLoad_onlyCanonicalProjectPolicyFilenameIsLoaded verifies that the loader
+// ignores lookalike policy filenames and only reads .no-pilot.yaml.
+func TestLoad_onlyCanonicalProjectPolicyFilenameIsLoaded(t *testing.T) {
+	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+
+	dir := t.TempDir()
+	writeFile(t, filepath.Join(dir, "no-pilot.yaml"), `
+tools:
+  execute_runInTerminal:
+    allowed: false
+`)
+
+	cfg, err := config.Load(dir)
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+	if !cfg.Policy("execute_runInTerminal").IsAllowed() {
+		t.Error("Policy(execute_runInTerminal).IsAllowed() = false, want true (non-canonical filename must be ignored)")
+	}
+}
+
+func TestLoad_strictSelfProtectRequiresExplicitDeny(t *testing.T) {
+	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+	t.Setenv(config.StrictSelfProtectEnv, "true")
+
+	dir := t.TempDir()
+	writeFile(t, filepath.Join(dir, ".no-pilot.yaml"), `
+tools:
+  edit_createFile:
+    allowed: true
+`)
+
+	_, err := config.Load(dir)
+	if err == nil {
+		t.Fatal("Load() error = nil, want strict self-protect validation error")
+	}
+}
+
+func TestLoad_strictSelfProtectPassesWithDenyPath(t *testing.T) {
+	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+	t.Setenv(config.StrictSelfProtectEnv, "1")
+
+	dir := t.TempDir()
+	writeFile(t, filepath.Join(dir, ".no-pilot.yaml"), `
+tools:
+  edit_createFile:
+    allowed: true
+    deny_paths:
+      - "**/.no-pilot.yaml"
+`)
+
+	_, err := config.Load(dir)
+	if err != nil {
+		t.Fatalf("Load() error = %v, want nil", err)
+	}
+}
+
+func TestLoad_strictSelfProtectPassesWhenAllEditToolsDisabled(t *testing.T) {
+	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+	t.Setenv(config.StrictSelfProtectEnv, "true")
+
+	dir := t.TempDir()
+	writeFile(t, filepath.Join(dir, ".no-pilot.yaml"), `
+tools:
+  edit_createFile:
+    allowed: false
+  edit_editFiles:
+    allowed: false
+`)
+
+	_, err := config.Load(dir)
+	if err != nil {
+		t.Fatalf("Load() error = %v, want nil when all edit tools are disabled", err)
+	}
+}
+
 // TestLoad_projectConfigSetsDenyPaths verifies that deny_paths from the
 // project config are surfaced correctly.
 func TestLoad_projectConfigSetsDenyPaths(t *testing.T) {

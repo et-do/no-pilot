@@ -19,7 +19,7 @@ const toolCodebaseSearch = "search_codebase"
 
 var codebaseSearchTool = mcp.NewTool(
 	toolCodebaseSearch,
-	mcp.WithDescription("Run a relevance-ranked lexical search across source files."),
+	mcp.WithDescription("[SEARCH] Run a relevance-ranked lexical search across source files."),
 	mcp.WithReadOnlyHintAnnotation(true),
 	mcp.WithDestructiveHintAnnotation(false),
 	mcp.WithString("query",

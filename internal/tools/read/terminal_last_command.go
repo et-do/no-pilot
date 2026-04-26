@@ -15,7 +15,7 @@ const toolTerminalLastCommand = "read_terminalLastCommand"
 
 var terminalLastCommandTool = mcp.NewTool(
 	toolTerminalLastCommand,
-	mcp.WithDescription("Get the last terminal command run through no-pilot and its output."),
+	mcp.WithDescription("[READ] Get the last terminal command run through no-pilot and its output."),
 	mcp.WithReadOnlyHintAnnotation(true),
 	mcp.WithDestructiveHintAnnotation(false),
 )

@@ -17,7 +17,7 @@ const toolCreateFile = "edit_createFile"
 
 var createFileTool = mcp.NewTool(
 	toolCreateFile,
-	mcp.WithDescription("Create a new file in the workspace. The file is created with the provided content, and parent directories are created when needed."),
+	mcp.WithDescription("[EDIT] Create a new file in the workspace. The file is created with the provided content, and parent directories are created when needed."),
 	mcp.WithString("filePath",
 		mcp.Required(),
 		mcp.Description("Absolute path to the file to create."),

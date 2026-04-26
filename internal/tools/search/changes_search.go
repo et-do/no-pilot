@@ -16,7 +16,7 @@ const toolChangesSearch = "search_changes"
 
 var changesSearchTool = mcp.NewTool(
 	toolChangesSearch,
-	mcp.WithDescription("List current source control changes from git status."),
+	mcp.WithDescription("[SEARCH] List current source control changes from git status."),
 	mcp.WithReadOnlyHintAnnotation(true),
 	mcp.WithDestructiveHintAnnotation(false),
 	mcp.WithString("repositoryPath",

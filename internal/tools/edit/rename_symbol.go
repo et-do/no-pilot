@@ -18,7 +18,7 @@ const toolRenameSymbol = "edit_renameSymbol"
 
 var renameSymbolTool = mcp.NewTool(
 	toolRenameSymbol,
-	mcp.WithDescription("Rename symbol text across files (lexical replacement with word boundaries, not language-server aware)."),
+	mcp.WithDescription("[EDIT] Rename symbol text across files (lexical replacement with word boundaries, not language-server aware)."),
 	mcp.WithString("symbol",
 		mcp.Required(),
 		mcp.Description("Current symbol name to rename."),

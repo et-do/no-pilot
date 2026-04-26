@@ -18,7 +18,7 @@ const toolFileSearch = "search_fileSearch"
 
 var fileSearchTool = mcp.NewTool(
 	toolFileSearch,
-	mcp.WithDescription("Search for files in the workspace by glob pattern."),
+	mcp.WithDescription("[SEARCH] Search for files in the workspace by glob pattern."),
 	mcp.WithReadOnlyHintAnnotation(true),
 	mcp.WithDestructiveHintAnnotation(false),
 	mcp.WithString("query",

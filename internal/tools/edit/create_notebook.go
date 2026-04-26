@@ -19,7 +19,7 @@ const toolCreateNotebook = "edit_createNotebook"
 
 var createNotebookTool = mcp.NewTool(
 	toolCreateNotebook,
-	mcp.WithDescription("Create a new Jupyter notebook file."),
+	mcp.WithDescription("[EDIT] Create a new Jupyter notebook file."),
 	mcp.WithString("filePath",
 		mcp.Required(),
 		mcp.Description("Absolute path to the notebook file to create."),
