@@ -13,4 +13,8 @@ import (
 // Register adds all #execute tools to s using cfg for policy enforcement.
 func Register(s *server.MCPServer, cfg config.Provider) {
 	registerRunInTerminal(s, cfg)
+	registerListTerminals(s, cfg)
+	registerGetTerminalOutput(s, cfg)
+	registerSendToTerminal(s, cfg)
+	registerKillTerminal(s, cfg)
 }

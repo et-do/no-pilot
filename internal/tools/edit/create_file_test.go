@@ -1,64 +1,24 @@
 package edit_test
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/et-do/no-pilot/internal/config"
-	nopilotserver "github.com/et-do/no-pilot/internal/server"
+	"github.com/et-do/no-pilot/internal/testutil"
 	"github.com/mark3labs/mcp-go/client"
 	"github.com/mark3labs/mcp-go/mcp"
 )
 
-func newClient(t *testing.T, cfg *config.Config) *client.Client {
-	t.Helper()
-	s := nopilotserver.Build(cfg, "test")
-	c, err := client.NewInProcessClient(s)
-	if err != nil {
-		t.Fatalf("NewInProcessClient: %v", err)
-	}
-	ctx := context.Background()
-	if err := c.Start(ctx); err != nil {
-		t.Fatalf("client.Start: %v", err)
-	}
-	if _, err := c.Initialize(ctx, mcp.InitializeRequest{}); err != nil {
-		t.Fatalf("client.Initialize: %v", err)
-	}
-	return c
-}
-
-func defaultConfig(t *testing.T) *config.Config {
-	t.Helper()
-	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
-	cfg, err := config.Load(t.TempDir())
-	if err != nil {
-		t.Fatalf("config.Load: %v", err)
-	}
-	return cfg
-}
-
 func callCreateFile(t *testing.T, c *client.Client, args map[string]any) *mcp.CallToolResult {
 	t.Helper()
-	req := mcp.CallToolRequest{}
-	req.Params.Name = "edit_createFile"
-	req.Params.Arguments = args
-	result, err := c.CallTool(context.Background(), req)
-	if err != nil {
-		t.Fatalf("CallTool: %v", err)
-	}
-	return result
+	return testutil.CallTool(t, c, "edit_createFile", args)
 }
 
 func textContent(result *mcp.CallToolResult) string {
-	for _, c := range result.Content {
-		if tc, ok := c.(mcp.TextContent); ok {
-			return tc.Text
-		}
-	}
-	return ""
+	return testutil.TextContent(result)
 }
 
 func TestCreateFile_createsNewFileAndParents(t *testing.T) {
@@ -66,7 +26,7 @@ func TestCreateFile_createsNewFileAndParents(t *testing.T) {
 	path := filepath.Join(dir, "nested", "folder", "new.txt")
 	content := "hello\nworld\n"
 
-	c := newClient(t, defaultConfig(t))
+	c := testutil.NewClient(t, testutil.DefaultConfig(t))
 	result := callCreateFile(t, c, map[string]any{
 		"filePath": path,
 		"content":  content,
@@ -91,7 +51,7 @@ func TestCreateFile_rejectsExistingFile(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	c := newClient(t, defaultConfig(t))
+	c := testutil.NewClient(t, testutil.DefaultConfig(t))
 	result := callCreateFile(t, c, map[string]any{
 		"filePath": path,
 		"content":  "new",
@@ -113,7 +73,7 @@ func TestCreateFile_rejectsExistingFile(t *testing.T) {
 }
 
 func TestCreateFile_missingArgs(t *testing.T) {
-	c := newClient(t, defaultConfig(t))
+	c := testutil.NewClient(t, testutil.DefaultConfig(t))
 
 	missingPath := callCreateFile(t, c, map[string]any{"content": "x"})
 	if !missingPath.IsError {
@@ -131,7 +91,7 @@ func TestCreateFile_toolDeniedByPolicy(t *testing.T) {
 	cfg := &config.Config{Tools: map[string]config.ToolPolicy{
 		"edit_createFile": {Allowed: &f},
 	}}
-	c := newClient(t, cfg)
+	c := testutil.NewClient(t, cfg)
 	result := callCreateFile(t, c, map[string]any{
 		"filePath": filepath.Join(t.TempDir(), "x.txt"),
 		"content":  "x",
@@ -152,7 +112,7 @@ func TestCreateFile_denyPathBlocked(t *testing.T) {
 			DenyPaths: []string{"**/secrets/**"},
 		},
 	}}
-	c := newClient(t, cfg)
+	c := testutil.NewClient(t, cfg)
 	result := callCreateFile(t, c, map[string]any{
 		"filePath": blocked,
 		"content":  "should not write",

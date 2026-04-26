@@ -15,4 +15,7 @@ func Register(s *server.MCPServer, cfg config.Provider) {
 	registerReadFile(s, cfg)
 	registerListDirectory(s, cfg)
 	registerProblems(s, cfg)
+	registerTerminalLastCommand(s, cfg)
+	registerGetNotebookSummary(s, cfg)
+	registerReadNotebookCellOutput(s, cfg)
 }
