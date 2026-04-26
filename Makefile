@@ -39,7 +39,7 @@ smoke:
 	go test -v ./internal/server -run TestSmoke -timeout 60s
 
 ## ci: run smoke + full test suite locally (mimics GitHub Actions)
-ci: smoke test
+ci: test
 	@echo "✓ CI pipeline passed"
 
 ## run: build and start the MCP server (stdio) — for manual smoke-testing; pipe JSON-RPC to stdin

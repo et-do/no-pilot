@@ -86,7 +86,9 @@ func TestListDirectory_nonExistentDir(t *testing.T) {
 func TestListDirectory_pathIsFile(t *testing.T) {
 	dir := t.TempDir()
 	file := filepath.Join(dir, "file.txt")
-	os.WriteFile(file, []byte("x"), 0o600)
+	if err := os.WriteFile(file, []byte("x"), 0o600); err != nil {
+		t.Fatalf("WriteFile: %v", err)
+	}
 	c := newClient(t, defaultConfig(t))
 	result := callListDirectory(t, c, map[string]any{"path": file})
 	if !result.IsError {
@@ -130,7 +132,9 @@ func TestListDirectory_denyPathBlocked(t *testing.T) {
 	}
 	dir := t.TempDir()
 	private := filepath.Join(dir, "private")
-	os.MkdirAll(private, 0o755)
+	if err := os.MkdirAll(private, 0o755); err != nil {
+		t.Fatalf("MkdirAll: %v", err)
+	}
 	c := newClient(t, cfg)
 	result := callListDirectory(t, c, map[string]any{"path": private})
 	if !result.IsError {
@@ -150,7 +154,9 @@ func TestListDirectory_denyPathAllowsOtherDirs(t *testing.T) {
 	}
 	dir := t.TempDir()
 	public := filepath.Join(dir, "public")
-	os.MkdirAll(public, 0o755)
+	if err := os.MkdirAll(public, 0o755); err != nil {
+		t.Fatalf("MkdirAll: %v", err)
+	}
 	c := newClient(t, cfg)
 	result := callListDirectory(t, c, map[string]any{"path": public})
 	if result.IsError {
