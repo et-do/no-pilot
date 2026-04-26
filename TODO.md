@@ -66,7 +66,7 @@ No VS Code dependency — works as a standalone MCP server.
 
 ## `#web` — lightweight web fetch (no browser required)
 
-- [ ] `web/fetch` — fetch and extract text content from a public URL (mirrors `fetch_webpage`)
+- [x] `web/fetch` — fetch and extract text content from a public URL (closest standalone equivalent to `fetch_webpage`)
 
 ## `#vscode` — VS Code API and workspace metadata
 
