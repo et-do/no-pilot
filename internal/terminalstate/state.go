@@ -51,6 +51,7 @@ type session struct {
 	env         []string
 	cmd         *exec.Cmd
 	stdin       io.WriteCloser
+	readers     sync.WaitGroup
 	output      []byte
 	running     bool
 	exitCode    int
@@ -132,6 +133,7 @@ func StartWithOptions(command string, opts StartOptions) (Snapshot, error) {
 		return Snapshot{}, fmt.Errorf("start command: %w", err)
 	}
 
+	s.readers.Add(2)
 	go s.capture(stdout)
 	go s.capture(stderr)
 	go s.wait()
@@ -287,6 +289,7 @@ func getSession(id string) (*session, bool) {
 }
 
 func (s *session) capture(r io.Reader) {
+	defer s.readers.Done()
 	buf := make([]byte, 4096)
 	for {
 		n, err := r.Read(buf)
@@ -310,6 +313,7 @@ func (s *session) appendOutput(chunk []byte) {
 
 func (s *session) wait() {
 	err := s.cmd.Wait()
+	s.readers.Wait()
 	duration := time.Since(s.startedAt)
 
 	exitCode := 0

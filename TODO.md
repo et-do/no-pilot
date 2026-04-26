@@ -22,9 +22,9 @@ executing. Tools are grouped by the same toolsets Copilot uses.
 
 - [x] `search/fileSearch` — find files by glob pattern (mirrors `file_search`)
 - [x] `search/textSearch` — full-text / regex search across files (mirrors `grep_search`)
-- [ ] `search/codebase` — semantic/embedding-based workspace search (mirrors `semantic_search`)
-- [ ] `search/changes` — list current source control changes (mirrors `get_changed_files`)
-- [ ] `search/usages` — find all references, implementations, and definitions of a symbol (mirrors `vscode_listCodeUsages`)
+- [x] `search/codebase` — relevance-ranked lexical workspace search (closest standalone equivalent to `semantic_search`)
+- [x] `search/changes` — list current source control changes (mirrors `get_changed_files`)
+- [x] `search/usages` — find textual symbol usages across files (closest standalone equivalent to `vscode_listCodeUsages`)
 
 
 ## `#edit` — write files and workspace structure

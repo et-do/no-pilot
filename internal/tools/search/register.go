@@ -14,4 +14,7 @@ import (
 func Register(s *server.MCPServer, cfg config.Provider) {
 	registerFileSearch(s, cfg)
 	registerGrepSearch(s, cfg)
+	registerCodebaseSearch(s, cfg)
+	registerChangesSearch(s, cfg)
+	registerUsagesSearch(s, cfg)
 }
