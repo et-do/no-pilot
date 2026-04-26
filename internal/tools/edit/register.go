@@ -12,6 +12,9 @@ import (
 // Register adds all #edit tools to s using cfg for policy enforcement.
 func Register(s *server.MCPServer, cfg config.Provider) {
 	registerCreateFile(s, cfg)
-	// TODO: implement edit/createFile, edit/replaceStringInFile,
-	// edit/insertIntoFile, edit/multiReplaceStringInFile, etc.
+	registerCreateDirectory(s, cfg)
+	registerEditFiles(s, cfg)
+	registerRenameSymbol(s, cfg)
+	registerEditNotebook(s, cfg)
+	registerCreateNotebook(s, cfg)
 }
