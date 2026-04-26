@@ -1,39 +1,13 @@
 package search_test
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/et-do/no-pilot/internal/testutil"
 )
-
-func callFileSearch(t *testing.T, c testClient, args map[string]any) *mcp.CallToolResult {
-	t.Helper()
-	req := mcp.CallToolRequest{}
-	req.Params.Name = "search_fileSearch"
-	req.Params.Arguments = args
-	result, err := c.CallTool(context.Background(), req)
-	if err != nil {
-		t.Fatalf("CallTool: %v", err)
-	}
-	return result
-}
-
-type testClient interface {
-	CallTool(context.Context, mcp.CallToolRequest) (*mcp.CallToolResult, error)
-}
-
-func extractText(res *mcp.CallToolResult) string {
-	for _, c := range res.Content {
-		if tc, ok := c.(mcp.TextContent); ok {
-			return tc.Text
-		}
-	}
-	return ""
-}
 
 func TestFileSearch_globMatch(t *testing.T) {
 	tmp := t.TempDir()
@@ -55,12 +29,12 @@ func TestFileSearch_globMatch(t *testing.T) {
 
 	cfg := defaultConfig(t)
 	c := newClient(t, cfg)
-	res := callFileSearch(t, c, map[string]any{"query": filepath.Join(tmp, "**", "*.txt")})
+	res := testutil.CallTool(t, c, "search_fileSearch", map[string]any{"query": filepath.Join(tmp, "**", "*.txt")})
 	if res.IsError {
-		t.Fatalf("unexpected error: %s", extractText(res))
+		t.Fatalf("unexpected error: %s", testutil.TextContent(res))
 	}
 
-	text := extractText(res)
+	text := testutil.TextContent(res)
 	if !strings.Contains(text, "one.txt") || !strings.Contains(text, "two.txt") {
 		t.Fatalf("expected txt files in result, got %q", text)
 	}
@@ -80,15 +54,15 @@ func TestFileSearch_maxResults(t *testing.T) {
 
 	cfg := defaultConfig(t)
 	c := newClient(t, cfg)
-	res := callFileSearch(t, c, map[string]any{
+	res := testutil.CallTool(t, c, "search_fileSearch", map[string]any{
 		"query":      filepath.Join(tmp, "*.txt"),
 		"maxResults": 2,
 	})
 	if res.IsError {
-		t.Fatalf("unexpected error: %s", extractText(res))
+		t.Fatalf("unexpected error: %s", testutil.TextContent(res))
 	}
 
-	text := strings.TrimSpace(extractText(res))
+	text := strings.TrimSpace(testutil.TextContent(res))
 	if text == "" {
 		t.Fatal("expected at least one result")
 	}
@@ -112,12 +86,12 @@ func TestFileSearch_absoluteDirScope(t *testing.T) {
 
 	cfg := defaultConfig(t)
 	c := newClient(t, cfg)
-	res := callFileSearch(t, c, map[string]any{"query": tmp})
+	res := testutil.CallTool(t, c, "search_fileSearch", map[string]any{"query": tmp})
 	if res.IsError {
-		t.Fatalf("unexpected error: %s", extractText(res))
+		t.Fatalf("unexpected error: %s", testutil.TextContent(res))
 	}
 
-	text := extractText(res)
+	text := testutil.TextContent(res)
 	if !strings.Contains(text, "a.go") || !strings.Contains(text, "b.txt") {
 		t.Fatalf("expected directory-scope results, got %q", text)
 	}

@@ -27,12 +27,7 @@ func TestProblems_fileNotFound(t *testing.T) {
 	cfg := defaultConfig(t)
 	c := newClient(t, cfg)
 	res := callProblems(t, c, map[string]any{"filePath": "doesnotexist.go"})
-	var text string
-	for _, c := range res.Content {
-		if tc, ok := c.(mcp.TextContent); ok {
-			text = tc.Text
-		}
-	}
+	text := textContent(t, res)
 	if res.IsError {
 		t.Fatalf("unexpected error: %v", text)
 	}
@@ -54,12 +49,7 @@ func TestProblems_validGoFile_noProblems(t *testing.T) {
 	cfg := defaultConfig(t)
 	c := newClient(t, cfg)
 	res := callProblems(t, c, map[string]any{"filePath": f.Name()})
-	var text string
-	for _, c := range res.Content {
-		if tc, ok := c.(mcp.TextContent); ok {
-			text = tc.Text
-		}
-	}
+	text := textContent(t, res)
 	if res.IsError {
 		t.Fatalf("unexpected error: %v", text)
 	}
@@ -81,12 +71,7 @@ func TestProblems_invalidGoFile_reportsError(t *testing.T) {
 	cfg := defaultConfig(t)
 	c := newClient(t, cfg)
 	res := callProblems(t, c, map[string]any{"filePath": f.Name()})
-	var text string
-	for _, c := range res.Content {
-		if tc, ok := c.(mcp.TextContent); ok {
-			text = tc.Text
-		}
-	}
+	text := textContent(t, res)
 	if res.IsError {
 		t.Fatalf("unexpected error: %v", text)
 	}

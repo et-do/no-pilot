@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/et-do/no-pilot/internal/config"
+	"github.com/et-do/no-pilot/internal/testutil"
 	"github.com/mark3labs/mcp-go/client"
 	"github.com/mark3labs/mcp-go/mcp"
 )
@@ -28,26 +29,13 @@ func writeFile(t *testing.T, path, content string) {
 // callReadFile is a convenience wrapper around client.CallTool.
 func callReadFile(t *testing.T, c *client.Client, args map[string]any) *mcp.CallToolResult {
 	t.Helper()
-	req := mcp.CallToolRequest{}
-	req.Params.Name = "read_readFile"
-	req.Params.Arguments = args
-	result, err := c.CallTool(context.Background(), req)
-	if err != nil {
-		t.Fatalf("CallTool: %v", err)
-	}
-	return result
+	return testutil.CallTool(t, c, "read_readFile", args)
 }
 
 // textContent extracts all text from a non-error result.
 func textContent(t *testing.T, result *mcp.CallToolResult) string {
 	t.Helper()
-	var sb strings.Builder
-	for _, c := range result.Content {
-		if tc, ok := c.(mcp.TextContent); ok {
-			sb.WriteString(tc.Text)
-		}
-	}
-	return sb.String()
+	return testutil.TextContent(result)
 }
 
 // --- registration ---
