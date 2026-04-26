@@ -30,11 +30,11 @@ executing. Tools are grouped by the same toolsets Copilot uses.
 ## `#edit` — write files and workspace structure
 
 - [x] `edit/createFile` — create a new file with given content (mirrors `create_file`)
-- [ ] `edit/createDirectory` — create a new directory (mirrors `create_directory`)
-- [ ] `edit/editFiles` — apply targeted string-replacement edits to one or more files (mirrors `replace_string_in_file` / `multi_replace_string_in_file`)
-- [ ] `edit/renameSymbol` — semantics-aware symbol rename across the workspace (mirrors `vscode_renameSymbol`)
-- [ ] `edit/editNotebook` — insert, delete, or modify notebook cells (mirrors `edit_notebook_file`)
-- [ ] `edit/createNotebook` — create a new Jupyter notebook (mirrors `create_new_jupyter_notebook`)
+- [x] `edit/createDirectory` — create a new directory (mirrors `create_directory`)
+- [x] `edit/editFiles` — apply targeted string-replacement edits to one or more files (mirrors `replace_string_in_file` / `multi_replace_string_in_file`)
+- [x] `edit/renameSymbol` — lexical symbol rename across the workspace (closest standalone equivalent to `vscode_renameSymbol`)
+- [x] `edit/editNotebook` — insert, delete, or modify notebook cells in persisted `.ipynb` JSON (closest standalone equivalent to `edit_notebook_file`)
+- [x] `edit/createNotebook` — create a new Jupyter notebook file (closest standalone equivalent to `create_new_jupyter_notebook`)
 
 
 ## `#execute` — run code and commands
@@ -44,10 +44,10 @@ executing. Tools are grouped by the same toolsets Copilot uses.
 - [x] `execute/getTerminalOutput` — get output from a running async terminal session, including optional byte-range reads (mirrors `get_terminal_output`)
 - [x] `execute/sendToTerminal` — send input to a persistent terminal session (mirrors `send_to_terminal`)
 - [x] `execute/killTerminal` — terminate a terminal session (mirrors `kill_terminal`)
-- [ ] `execute/runNotebookCell` — execute a notebook cell (mirrors `run_notebook_cell`)
-- [ ] `execute/createAndRunTask` — create and run a workspace task (mirrors `create_and_run_task`)
-- [ ] `execute/runTests` — run unit tests and return results (mirrors `runTests`)
-- [ ] `execute/testFailure` — get detailed unit test failure information (mirrors `test_failure`)
+- [x] `execute/runNotebookCell` — execute notebook code cells up to a target cell and persist outputs (closest standalone equivalent to `run_notebook_cell`)
+- [x] `execute/createAndRunTask` — create/update `.vscode/tasks.json` and run shell task commands (closest standalone equivalent to `create_and_run_task`)
+- [x] `execute/runTests` — run Go unit tests and optional coverage output (standalone equivalent to `runTests` in this repository)
+- [x] `execute/testFailure` — return failure details from the most recent `execute_runTests` run (standalone equivalent to `test_failure`)
 
 ## `#browser` — headless browser (go-rod / chromedp)
 
