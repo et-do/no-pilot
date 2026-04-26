@@ -1,6 +1,8 @@
 package execute_test
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -18,7 +20,7 @@ func callRunInTerminal(t *testing.T, c *client.Client, cmd string) *mcp.CallTool
 func TestRunInTerminal_echo(t *testing.T) {
 	resetTerminalState(t)
 	c := testutil.NewClient(t, testutil.DefaultConfig(t))
-	result := callRunInTerminal(t, c, "echo hello world")
+	result := callRunInTerminal(t, c, "sh -c 'echo hello world; sleep 0.02'")
 	if result.IsError {
 		t.Fatalf("unexpected error: %v", result.Content)
 	}
@@ -131,16 +133,21 @@ func TestRunInTerminal_syncTimeoutReturnsTerminalID(t *testing.T) {
 func TestRunInTerminal_withWorkingDirectory(t *testing.T) {
 	resetTerminalState(t)
 	workDir := t.TempDir()
+	proofFile := filepath.Join(workDir, ".no-pilot-cwd.txt")
 	c := testutil.NewClient(t, testutil.DefaultConfig(t))
 	result := callExecuteTool(t, c, "execute_runInTerminal", map[string]any{
-		"command": "pwd",
+		"command": "sh -c 'pwd > .no-pilot-cwd.txt'",
 		"cwd":     workDir,
 	})
 	if result.IsError {
 		t.Fatalf("unexpected error: %v", result.Content)
 	}
-	if !strings.Contains(getText(result), workDir) {
-		t.Fatalf("expected pwd output to include %q, got %q", workDir, getText(result))
+	b, err := os.ReadFile(proofFile)
+	if err != nil {
+		t.Fatalf("expected proof file in cwd, read error: %v", err)
+	}
+	if strings.TrimSpace(string(b)) != workDir {
+		t.Fatalf("expected pwd proof %q, got %q", workDir, strings.TrimSpace(string(b)))
 	}
 }
 
