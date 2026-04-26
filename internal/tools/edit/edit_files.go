@@ -24,7 +24,7 @@ type fileEdit struct {
 
 var editFilesTool = mcp.NewTool(
 	toolEditFiles,
-	mcp.WithDescription("Apply targeted string replacements in one or more files."),
+	mcp.WithDescription("[EDIT] Apply targeted string replacements in one or more files."),
 	mcp.WithString("filePath",
 		mcp.Description("Single-file edit path. Used with oldString/newString when edits is not provided."),
 	),

@@ -14,7 +14,7 @@ const toolReadNotebookCellOutput = "read_readNotebookCellOutput"
 
 var readNotebookCellOutputTool = mcp.NewTool(
 	toolReadNotebookCellOutput,
-	mcp.WithDescription("Read the most recent output of a notebook cell."),
+	mcp.WithDescription("[READ] Read the most recent output of a notebook cell."),
 	mcp.WithReadOnlyHintAnnotation(true),
 	mcp.WithDestructiveHintAnnotation(false),
 	mcp.WithString("filePath",

@@ -13,7 +13,7 @@ const toolTestFailure = "execute_testFailure"
 
 var testFailureTool = mcp.NewTool(
 	toolTestFailure,
-	mcp.WithDescription("Return failure details from the most recent execute_runTests invocation."),
+	mcp.WithDescription("[EXECUTE] Return failure details from the most recent execute_runTests invocation."),
 )
 
 func registerTestFailure(s *server.MCPServer, cfg config.Provider) {

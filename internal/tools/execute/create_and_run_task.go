@@ -21,7 +21,7 @@ const toolCreateAndRunTask = "execute_createAndRunTask"
 
 var createAndRunTaskTool = mcp.NewTool(
 	toolCreateAndRunTask,
-	mcp.WithDescription("Create or update a workspace shell task in .vscode/tasks.json and run it."),
+	mcp.WithDescription("[EXECUTE] Create or update a workspace shell task in .vscode/tasks.json and run it."),
 	mcp.WithString("workspaceFolder",
 		mcp.Required(),
 		mcp.Description("Absolute path of workspace folder where tasks.json is created."),

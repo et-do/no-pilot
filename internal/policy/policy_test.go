@@ -233,6 +233,32 @@ func TestEnforceWithPaths_multiplePathArgs(t *testing.T) {
 	}
 }
 
+func TestEnforceWithPaths_editToolsAlwaysDenyProjectPolicyFile(t *testing.T) {
+	cfg := cfgWith("edit_createFile", config.ToolPolicy{Allowed: allowBool(true)})
+	mw := policy.EnforceWithPaths(cfg, "edit_createFile", "filePath")
+
+	result, err := apply(mw, makeReq(map[string]any{"filePath": "/workspace/.no-pilot.yaml"}))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !result.IsError {
+		t.Error("IsError = false, want true (.no-pilot.yaml must be immutable for edit tools)")
+	}
+}
+
+func TestEnforceWithPaths_nonEditToolsMayReadProjectPolicyFile(t *testing.T) {
+	cfg := cfgWith("read_readFile", config.ToolPolicy{Allowed: allowBool(true)})
+	mw := policy.EnforceWithPaths(cfg, "read_readFile", "filePath")
+
+	result, err := apply(mw, makeReq(map[string]any{"filePath": "/workspace/.no-pilot.yaml"}))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result.IsError {
+		t.Error("IsError = true, want false (read tools may still access policy file)")
+	}
+}
+
 // --- EnforceWithCommand ---
 
 func TestEnforceWithCommand_noRestrictions_passes(t *testing.T) {
@@ -377,6 +403,52 @@ func TestEnforceWithCommand_allowLayersLogicalIntersection(t *testing.T) {
 		if result.IsError != tc.wantErr {
 			t.Errorf("cmd %q (%s): IsError = %v, want %v", tc.cmd, tc.reason, result.IsError, tc.wantErr)
 		}
+	}
+}
+
+func TestEnforceWithCommand_blocksProtectedPolicyFileReference(t *testing.T) {
+	cfg := cfgWith("execute_runInTerminal", config.ToolPolicy{Allowed: allowBool(true)})
+	mw := policy.EnforceWithCommand(cfg, "execute_runInTerminal", "command")
+
+	result, err := apply(mw, makeReq(map[string]any{"command": "cat generated > .no-pilot.yaml"}))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !result.IsError {
+		t.Error("IsError = false, want true (.no-pilot.yaml reference must be denied for runInTerminal)")
+	}
+}
+
+func TestEnforceWithCommand_monotonicAttenuationBlocksNestedDeniedCommand(t *testing.T) {
+	cfg := cfgWith("execute_runInTerminal", config.ToolPolicy{
+		Allowed:       allowBool(true),
+		AllowCommands: []string{"bash *", "rm *"},
+		DenyCommands:  []string{"rm -rf *"},
+	})
+	mw := policy.EnforceWithCommand(cfg, "execute_runInTerminal", "command")
+
+	result, err := apply(mw, makeReq(map[string]any{"command": "bash -c 'rm -rf /tmp/no-pilot-test'"}))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !result.IsError {
+		t.Error("IsError = false, want true (nested command must inherit deny restrictions)")
+	}
+}
+
+func TestEnforceWithCommand_monotonicAttenuationAllowsNestedAllowedCommand(t *testing.T) {
+	cfg := cfgWith("execute_runInTerminal", config.ToolPolicy{
+		Allowed:       allowBool(true),
+		AllowCommands: []string{"bash *", "go *"},
+	})
+	mw := policy.EnforceWithCommand(cfg, "execute_runInTerminal", "command")
+
+	result, err := apply(mw, makeReq(map[string]any{"command": "bash -c 'go test ./...'"}))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result.IsError {
+		t.Error("IsError = true, want false (nested command also satisfies allowlist)")
 	}
 }
 

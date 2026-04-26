@@ -16,7 +16,7 @@ const toolReadFile = "read_readFile"
 
 var readFileTool = mcp.NewTool(
 	toolReadFile,
-	mcp.WithDescription("Read the contents of a file in the workspace. Optionally restrict to a line range (1-based, inclusive)."),
+	mcp.WithDescription("[READ] Read the contents of a file in the workspace. Optionally restrict to a line range (1-based, inclusive)."),
 	mcp.WithReadOnlyHintAnnotation(true),
 	mcp.WithDestructiveHintAnnotation(false),
 	mcp.WithString("filePath",

@@ -17,7 +17,7 @@ const toolProblems = "read_problems"
 
 var problemsTool = mcp.NewTool(
 	toolProblems,
-	mcp.WithDescription("Check errors for a particular file. Only Go syntax errors are reported."),
+	mcp.WithDescription("[READ] Check errors for a particular file. Only Go syntax errors are reported."),
 	mcp.WithString("filePath",
 		mcp.Required(),
 		mcp.Description("Absolute path to the file to check for problems."),

@@ -18,7 +18,7 @@ const toolRunNotebookCell = "execute_runNotebookCell"
 
 var runNotebookCellTool = mcp.NewTool(
 	toolRunNotebookCell,
-	mcp.WithDescription("Execute notebook code cells up to a target cell and persist outputs to the .ipynb file."),
+	mcp.WithDescription("[EXECUTE] Execute notebook code cells up to a target cell and persist outputs to the .ipynb file."),
 	mcp.WithString("filePath",
 		mcp.Required(),
 		mcp.Description("Absolute path to the notebook file."),

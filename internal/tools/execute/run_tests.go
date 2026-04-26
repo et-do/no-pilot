@@ -20,31 +20,35 @@ const toolRunTests = "execute_runTests"
 
 var runTestsTool = mcp.NewTool(
 	toolRunTests,
-	mcp.WithDescription("Run Go unit tests and return output. Supports optional coverage mode."),
+	mcp.WithDescription("[EXECUTE] Run tests and return output. Supports Go, Python (pytest), and Node test runners."),
 	mcp.WithString("files",
-		mcp.Description("Optional test target(s). Accepts a string or array-style input. Defaults to ./..."),
+		mcp.Description("Optional test target(s). Accepts a string or array-style input. Defaults vary by language (Go: ./..., Python/Node: current directory)."),
 	),
 	mcp.WithString("testNames",
-		mcp.Description("Optional test name(s) to run via -run. Accepts a string or array-style input."),
+		mcp.Description("Optional test name(s). Go maps to -run; Python maps to -k; Node maps to -t (framework-dependent)."),
 	),
 	mcp.WithString("mode",
-		mcp.Description("Execution mode: run (default) or coverage."),
+		mcp.Description("Execution mode: run (default) or coverage. Coverage is currently supported for Go and Node."),
 	),
 	mcp.WithString("coverageFiles",
-		mcp.Description("Optional file filters for coverage output. Accepts a string or array-style input."),
+		mcp.Description("Optional file filters for Go coverage profile output. Accepts a string or array-style input."),
+	),
+	mcp.WithString("language",
+		mcp.Description("Optional test language/runner: go (default), python, javascript, typescript, node, js, ts."),
+	),
+	mcp.WithString("cwd",
+		mcp.Description("Optional working directory to run tests from."),
 	),
 )
 
 func registerRunTests(s *server.MCPServer, cfg config.Provider) {
-	s.AddTool(runTestsTool, policy.Enforce(cfg, toolRunTests)(handleRunTests))
+	s.AddTool(runTestsTool, policy.EnforceWithPaths(cfg, toolRunTests, "cwd")(handleRunTests))
 }
 
 func handleRunTests(_ context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	files := parseStringListArg(req.GetArguments()["files"])
-	if len(files) == 0 {
-		files = []string{"./..."}
-	}
 	testNames := parseStringListArg(req.GetArguments()["testNames"])
+	coverageFilters := parseStringListArg(req.GetArguments()["coverageFiles"])
 	mode := strings.ToLower(strings.TrimSpace(req.GetString("mode", "run")))
 	if mode == "" {
 		mode = "run"
@@ -52,33 +56,36 @@ func handleRunTests(_ context.Context, req mcp.CallToolRequest) (*mcp.CallToolRe
 	if mode != "run" && mode != "coverage" {
 		return mcp.NewToolResultError("mode must be 'run' or 'coverage'"), nil
 	}
-
-	args := []string{"test", "-v"}
-	if len(testNames) > 0 {
-		args = append(args, "-run", joinTestNamesPattern(testNames))
+	language := normalizeLanguage(req.GetString("language", "go"))
+	if language == "" {
+		return mcp.NewToolResultError("language must be one of: go, python, javascript, typescript, node, js, ts"), nil
 	}
-	coverageProfile := ""
-	if mode == "coverage" {
-		tmp, err := os.CreateTemp("", "no-pilot-cover-*.out")
-		if err != nil {
-			return mcp.NewToolResultError(fmt.Sprintf("create coverage profile: %v", err)), nil
+
+	cmdName, cmdArgs, coverageProfile, err := buildTestCommand(language, mode, files, testNames)
+	if err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+
+	cmd := exec.Command(cmdName, cmdArgs...)
+	if cwd := strings.TrimSpace(req.GetString("cwd", "")); cwd != "" {
+		cmd.Dir = filepath.Clean(cwd)
+	} else if language == "go" {
+		if root, ok := moduleRootDir(); ok {
+			cmd.Dir = root
 		}
-		coverageProfile = tmp.Name()
-		_ = tmp.Close()
-		args = append(args, "-coverprofile", coverageProfile)
 	}
-	args = append(args, files...)
 
-	cmd := exec.Command("go", args...)
-	if root, ok := moduleRootDir(); ok {
-		cmd.Dir = root
-	}
-	out, err := cmd.CombinedOutput()
+	out, runErr := cmd.CombinedOutput()
 	outputText := string(out)
+	if runErr != nil {
+		if ee, ok := runErr.(*exec.Error); ok && ee.Err == exec.ErrNotFound {
+			return mcp.NewToolResultError(fmt.Sprintf("test runner not found: %s", cmdName)), nil
+		}
+	}
 
 	if coverageProfile != "" {
 		defer os.Remove(coverageProfile)
-		coverageSummary := readCoverageSummary(coverageProfile, parseStringListArg(req.GetArguments()["coverageFiles"]))
+		coverageSummary := readCoverageSummary(coverageProfile, coverageFilters)
 		if coverageSummary != "" {
 			if strings.TrimSpace(outputText) != "" {
 				outputText += "\n"
@@ -88,20 +95,20 @@ func handleRunTests(_ context.Context, req mcp.CallToolRequest) (*mcp.CallToolRe
 	}
 
 	if strings.TrimSpace(outputText) == "" {
-		outputText = "go test produced no output"
+		outputText = fmt.Sprintf("%s produced no output", cmdName)
 	}
 
 	failureDetail := extractFailureDetail(outputText)
 	state := lastTestRun{
 		Ran:           true,
-		Failed:        err != nil,
-		Summary:       summarizeRun(mode, files, testNames, err),
+		Failed:        runErr != nil,
+		Summary:       summarizeRun(language+":"+mode, files, testNames, runErr),
 		FailureDetail: failureDetail,
 	}
 	setLastTestRun(state)
 
 	result := mcp.NewToolResultText(outputText)
-	if err != nil {
+	if runErr != nil {
 		result.IsError = true
 	}
 	return result, nil
@@ -113,7 +120,8 @@ func parseStringListArg(raw any) []string {
 	case nil:
 		return out
 	case string:
-		for _, part := range strings.FieldsFunc(v, func(r rune) bool { return r == '\n' || r == ',' }) {
+		normalized := strings.NewReplacer(",", " ", "\n", " ", "\r", " ", "\t", " ").Replace(v)
+		for _, part := range strings.Fields(normalized) {
 			p := strings.TrimSpace(part)
 			if p != "" {
 				out = append(out, p)
@@ -137,6 +145,123 @@ func parseStringListArg(raw any) []string {
 				out = append(out, p)
 			}
 		}
+	}
+	return out
+}
+
+func normalizeLanguage(raw string) string {
+	v := strings.ToLower(strings.TrimSpace(raw))
+	switch v {
+	case "go", "golang":
+		return "go"
+	case "python", "py":
+		return "python"
+	case "javascript", "typescript", "node", "js", "ts":
+		return "node"
+	default:
+		return ""
+	}
+}
+
+func detectLanguageFromTargets(files []string) string {
+	for _, f := range files {
+		v := strings.ToLower(strings.TrimSpace(f))
+		switch {
+		case strings.HasSuffix(v, ".py"):
+			return "python"
+		case strings.HasSuffix(v, ".js"), strings.HasSuffix(v, ".jsx"), strings.HasSuffix(v, ".ts"), strings.HasSuffix(v, ".tsx"):
+			return "node"
+		}
+	}
+	return "go"
+}
+
+func buildTestCommand(language, mode string, files, testNames []string) (string, []string, string, error) {
+	switch language {
+	case "go":
+		goFiles := normalizeGoTestTargets(files)
+		if len(goFiles) == 0 {
+			goFiles = []string{"./..."}
+		}
+		args := []string{"test", "-v"}
+		if len(testNames) > 0 {
+			args = append(args, "-run", joinTestNamesPattern(testNames))
+		}
+		coverageProfile := ""
+		if mode == "coverage" {
+			tmp, err := os.CreateTemp("", "no-pilot-cover-*.out")
+			if err != nil {
+				return "", nil, "", fmt.Errorf("create coverage profile: %v", err)
+			}
+			coverageProfile = tmp.Name()
+			_ = tmp.Close()
+			args = append(args, "-coverprofile", coverageProfile)
+		}
+		args = append(args, goFiles...)
+		return "go", args, coverageProfile, nil
+	case "python":
+		args := []string{"-m", "pytest", "-q"}
+		if mode == "coverage" {
+			args = append(args, "--cov=.", "--cov-report=term-missing:skip-covered")
+		}
+		if len(testNames) > 0 {
+			args = append(args, "-k", strings.Join(testNames, " or "))
+		}
+		if len(files) == 0 {
+			files = []string{"."}
+		}
+		args = append(args, files...)
+		return "python3", args, "", nil
+	case "node":
+		args := []string{"test"}
+		if mode == "coverage" {
+			args = append(args, "--", "--coverage")
+			if len(testNames) > 0 {
+				args = append(args, "-t", strings.Join(testNames, "|"))
+			}
+			if len(files) > 0 {
+				args = append(args, files...)
+			}
+			return "npm", args, "", nil
+		}
+		if len(testNames) > 0 || len(files) > 0 {
+			args = append(args, "--")
+			if len(testNames) > 0 {
+				args = append(args, "-t", strings.Join(testNames, "|"))
+			}
+			args = append(args, files...)
+		}
+		return "npm", args, "", nil
+	default:
+		return "", nil, "", fmt.Errorf("unsupported language %q", language)
+	}
+}
+
+func normalizeGoTestTargets(targets []string) []string {
+	if len(targets) == 0 {
+		return nil
+	}
+	out := make([]string, 0, len(targets))
+	seen := map[string]struct{}{}
+	for _, target := range targets {
+		t := strings.TrimSpace(target)
+		if t == "" {
+			continue
+		}
+		if strings.HasSuffix(t, ".go") {
+			t = filepath.Dir(t)
+			if t == "." {
+				t = "./"
+			}
+		}
+		if !filepath.IsAbs(t) && !strings.HasPrefix(t, "./") && !strings.HasPrefix(t, "../") {
+			t = "./" + t
+		}
+		if _, ok := seen[t]; ok {
+			continue
+		}
+		seen[t] = struct{}{}
+		out = append(out, t)
 	}
 	return out
 }

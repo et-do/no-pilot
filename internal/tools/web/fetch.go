@@ -24,7 +24,7 @@ const toolFetch = "web_fetch"
 
 var fetchTool = mcp.NewTool(
 	toolFetch,
-	mcp.WithDescription("Fetch a public URL and return extracted text content."),
+	mcp.WithDescription("[WEB] Fetch a public URL and return extracted text content."),
 	mcp.WithReadOnlyHintAnnotation(true),
 	mcp.WithDestructiveHintAnnotation(false),
 	mcp.WithString("url",

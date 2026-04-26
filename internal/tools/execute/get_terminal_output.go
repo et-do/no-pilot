@@ -15,7 +15,7 @@ const toolGetTerminalOutput = "execute_getTerminalOutput"
 
 var getTerminalOutputTool = mcp.NewTool(
 	toolGetTerminalOutput,
-	mcp.WithDescription("Get the current output from a terminal session."),
+	mcp.WithDescription("[EXECUTE] Get the current output from a terminal session."),
 	mcp.WithReadOnlyHintAnnotation(true),
 	mcp.WithDestructiveHintAnnotation(false),
 	mcp.WithString("id",

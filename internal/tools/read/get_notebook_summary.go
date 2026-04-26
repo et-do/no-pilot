@@ -14,7 +14,7 @@ const toolGetNotebookSummary = "read_getNotebookSummary"
 
 var getNotebookSummaryTool = mcp.NewTool(
 	toolGetNotebookSummary,
-	mcp.WithDescription("List notebook cells and their metadata."),
+	mcp.WithDescription("[READ] List notebook cells and their metadata."),
 	mcp.WithReadOnlyHintAnnotation(true),
 	mcp.WithDestructiveHintAnnotation(false),
 	mcp.WithString("filePath",

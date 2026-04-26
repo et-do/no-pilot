@@ -18,8 +18,11 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/et-do/no-pilot/internal/config"
+	"github.com/et-do/no-pilot/internal/logging"
+	"github.com/et-do/no-pilot/internal/policy"
 	nopilotserver "github.com/et-do/no-pilot/internal/server"
 	"github.com/mark3labs/mcp-go/server"
 )
@@ -36,12 +39,18 @@ func main() {
 
 func run() error {
 	logger := log.New(os.Stderr, "[no-pilot] ", log.LstdFlags)
+	started := time.Now()
+	logLevel := logging.ParseLevel(os.Getenv("NO_PILOT_LOG_LEVEL"))
 
 	wd, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("get working directory: %w", err)
 	}
-	logger.Printf("starting version=%s cwd=%s", version, wd)
+	if logging.Enabled(logLevel, logging.LevelInfo) {
+		logger.Printf("starting version=%s pid=%d cwd=%s log_level=%s", version, os.Getpid(), wd, logging.String(logLevel))
+	}
+
+	policy.SetLogger(logger, logLevel)
 
 	watcher, err := config.NewWatcher(wd, logger)
 	if err != nil {
@@ -54,8 +63,16 @@ func run() error {
 	}()
 
 	s := nopilotserver.Build(watcher, version)
-	logger.Printf("server built, listening on stdio")
+	if logging.Enabled(logLevel, logging.LevelInfo) {
+		logger.Printf("server built, listening on stdio")
+	}
 	err = server.ServeStdio(s, server.WithErrorLogger(logger))
-	logger.Printf("server exited: %v", err)
-	return err
+	if err != nil {
+		logger.Printf("server exited with error=%v uptime=%s", err, time.Since(started).Round(time.Millisecond))
+		return err
+	}
+	if logging.Enabled(logLevel, logging.LevelInfo) {
+		logger.Printf("server exited cleanly uptime=%s", time.Since(started).Round(time.Millisecond))
+	}
+	return nil
 }

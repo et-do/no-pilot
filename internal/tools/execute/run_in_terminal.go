@@ -17,7 +17,7 @@ const toolRunInTerminal = "execute_runInTerminal"
 
 var runInTerminalTool = mcp.NewTool(
 	toolRunInTerminal,
-	mcp.WithDescription("Run a shell command in the workspace. Supports sync and async terminal sessions."),
+	mcp.WithDescription("[EXECUTE] Run a shell command in the workspace. Supports sync and async terminal sessions."),
 	mcp.WithString("command",
 		mcp.Required(),
 		mcp.Description("Shell command to execute (e.g. 'go build .')."),

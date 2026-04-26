@@ -15,7 +15,7 @@ const toolGrepSearch = "search_grepSearch"
 
 var grepSearchTool = mcp.NewTool(
 	toolGrepSearch,
-	mcp.WithDescription("Search for a string or regex in files. Returns matching lines with file and line number."),
+	mcp.WithDescription("[SEARCH] Search for a string or regex in files. Returns matching lines with file and line number."),
 	mcp.WithString("query",
 		mcp.Required(),
 		mcp.Description("The string or regex to search for."),

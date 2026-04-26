@@ -21,6 +21,21 @@ Zero-trust MCP server mirroring GitHub Copilot's built-in VS Code tools, with st
 
 ---
 
+## Beyond Copilot Built-ins
+
+no-pilot intentionally extends beyond strict parity in a few high-value areas:
+
+- System-level immutable protection for `.no-pilot.yaml` across edit and terminal pathways
+- Correlation-id policy logging with configurable log levels (`NO_PILOT_LOG_LEVEL`)
+- Monotonic command attenuation for shell/eval hops (nested commands cannot widen permissions)
+- Stronger terminal policy controls (`allow_commands`, `deny_commands`, `deny_shell_escape`, per-session `cwd` and `env`)
+- Expanded `execute_runTests` runner support (Go, Python/pytest, Node/npm test) with subset targeting improvements
+- Rich static web fetch controls (content-type guardrails, selector include/exclude extraction, cache revalidation)
+
+These are deliberate departures from pure mirror behavior to improve enforceability, auditability, and day-to-day agent functionality.
+
+---
+
 ## Security Model
 
 AI coding agents introduce two distinct risks. no-pilot is purpose-built to address the first; the second requires separate action on your part.
@@ -383,11 +398,14 @@ Open the Output panel (`Ctrl+Shift+U`), select `MCP: no-pilot`, and confirm the 
 ## Policy Configuration
 
 > [!NOTE]
-> Policy configuration is optional. By default no-pilot runs with no restrictions.
-> Policy file changes are hot-reloaded at runtime. Editing either user config or
+> - Policy configuration is optional. By default no-pilot runs with no restrictions.
+> - Policy file changes are hot-reloaded at runtime. Editing either user config or
 > `.no-pilot.yaml` applies updated restrictions without restarting VS Code.
-> Invalid `deny_paths`, `deny_commands`, and `deny_urls` patterns are rejected
+> - Invalid `deny_paths`, `deny_commands`, and `deny_urls` patterns are rejected
 > at load time (fail-closed) to avoid silent policy bypass from malformed rules.
+> - Optional strict startup gate: set `NO_PILOT_STRICT_SELF_PROTECT=true` to fail
+> startup unless project policy explicitly self-protects `.no-pilot.yaml` via
+> `deny_paths` on at least one enabled `edit_*` tool policy.
 
 Policies are configured via YAML files:
 
@@ -477,7 +495,7 @@ tools:
 - **`web_fetch` is static (non-browser) fetching.** It supports metadata, content-type guardrails, selector-based include/exclude extraction, and HTTP cache revalidation, but it is not a headless browser and does not execute client-side JavaScript.
 - **`edit_renameSymbol` is lexical, not language-server aware.** It applies word-boundary text replacement and does not provide semantic rename guarantees across definitions/references/implementations.
 - **Notebook edits are file-based JSON rewrites.** `edit_createNotebook` and `edit_editNotebook` modify persisted `.ipynb` content on disk and do not interact with a live notebook kernel or unsaved editor state.
-- **`execute_runTests` currently runs `go test`.** The standalone implementation is Go-focused in this repository and does not provide framework-specific adapters for every language test runner.
+- **`execute_runTests` supports Go, Python (pytest), and Node package test runners.** Coverage summaries are first-class for Go profile output; Python/Node coverage flags are passed through to their respective runners when requested.
 - **`execute_createAndRunTask` writes `tasks.json` but does not call VS Code task APIs.** It updates `.vscode/tasks.json` on disk and runs the command in a managed terminal session.
 - **`execute_runNotebookCell` is a file-based Python execution path.** It executes code cells up to the target cell from persisted `.ipynb` JSON, writes outputs back to disk, and requires `python3` in the runtime environment.
 - **Terminal reads and follow-up execute tools only see no-pilot-managed sessions.** `read_terminalLastCommand`, `execute_getTerminalOutput`, `execute_sendToTerminal`, and `execute_killTerminal` work against terminal sessions created by `execute_runInTerminal` in this server process. They do not attach to arbitrary VS Code terminals.

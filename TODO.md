@@ -13,6 +13,7 @@ executing. Tools are grouped by the same toolsets Copilot uses.
 - [x] `read/listDirectory` — list the contents of a directory (mirrors `list_dir`)
 - [x] `read/terminalLastCommand` — get the last terminal command and its output (mirrors `terminal_last_command`)
 - [ ] `read/terminalSelection` — get the current terminal selection (mirrors `terminal_selection`; not on the standalone-server roadmap because it requires VS Code terminal UI integration)
+- [ ] VS Code terminal bridge mode for execute/read terminal tools: add terminal target abstraction, extension-host bridge transport, and managed fallback for standalone use
 - [x] `read/problems` — get workspace errors and warnings from diagnostics (mirrors `get_errors`)
 - [x] `read/getNotebookSummary` — list notebook cells and their metadata (mirrors `copilot_getNotebookSummary`)
 - [x] `read/readNotebookCellOutput` — read the output of a notebook cell execution (mirrors `read_notebook_cell_output`)
@@ -46,7 +47,7 @@ executing. Tools are grouped by the same toolsets Copilot uses.
 - [x] `execute/killTerminal` — terminate a terminal session (mirrors `kill_terminal`)
 - [x] `execute/runNotebookCell` — execute notebook code cells up to a target cell and persist outputs (closest standalone equivalent to `run_notebook_cell`)
 - [x] `execute/createAndRunTask` — create/update `.vscode/tasks.json` and run shell task commands (closest standalone equivalent to `create_and_run_task`)
-- [x] `execute/runTests` — run Go unit tests and optional coverage output (standalone equivalent to `runTests` in this repository)
+- [x] `execute/runTests` — run tests across Go (`go test`), Python (`pytest`), and Node (`npm test`) with subset targeting, language selection/inference, and coverage mode support
 - [x] `execute/testFailure` — return failure details from the most recent `execute_runTests` run (standalone equivalent to `test_failure`)
 
 ## `#browser` — headless browser (go-rod / chromedp)

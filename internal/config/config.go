@@ -21,6 +21,16 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const (
+	// ProjectPolicyFileName is the only project-level policy filename loaded by no-pilot.
+	ProjectPolicyFileName = ".no-pilot.yaml"
+
+	// StrictSelfProtectEnv enables fail-closed validation that the project policy
+	// explicitly denies editing itself via deny_paths. When enabled and invalid,
+	// config loading fails and the server will not start.
+	StrictSelfProtectEnv = "NO_PILOT_STRICT_SELF_PROTECT"
+)
+
 // Provider is the interface satisfied by both *Config (static snapshot) and
 // *Watcher (live-reloading). All policy middleware and tool registration
 // functions accept Provider so the server can be built against either.
@@ -98,9 +108,16 @@ func Load(projectDir string) (*Config, error) {
 	}
 	merge(cfg, userCfg)
 
-	projCfg, err := loadFile(filepath.Join(projectDir, ".no-pilot.yaml"))
+	projectCfgPath := filepath.Join(projectDir, ProjectPolicyFileName)
+	projectCfgExists := fileExists(projectCfgPath)
+	projCfg, err := loadFile(projectCfgPath)
 	if err != nil {
 		return nil, err
+	}
+	if projectCfgExists && strictSelfProtectEnabled() {
+		if err := validateSelfProtectPolicy(projCfg, projectCfgPath); err != nil {
+			return nil, err
+		}
 	}
 	merge(cfg, projCfg)
 
@@ -111,6 +128,58 @@ func Load(projectDir string) (*Config, error) {
 func userConfigPath() string {
 	dir, _ := os.UserConfigDir()
 	return filepath.Join(dir, "no-pilot", "config.yaml")
+}
+
+func fileExists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
+}
+
+func strictSelfProtectEnabled() bool {
+	v := strings.TrimSpace(strings.ToLower(os.Getenv(StrictSelfProtectEnv)))
+	return v == "1" || v == "true" || v == "yes" || v == "on"
+}
+
+func validateSelfProtectPolicy(cfg *Config, path string) error {
+	if cfg == nil || len(cfg.Tools) == 0 {
+		return fmt.Errorf("config %s: strict self-protect is enabled but tools policy is empty", path)
+	}
+	hasEnabledEditTool := false
+	for tool, pol := range cfg.Tools {
+		if !strings.HasPrefix(tool, "edit_") {
+			continue
+		}
+		if pol.Allowed != nil && !*pol.Allowed {
+			continue
+		}
+		hasEnabledEditTool = true
+		if hasSelfDenyPath(pol.DenyPaths) {
+			return nil
+		}
+	}
+	if !hasEnabledEditTool {
+		return nil
+	}
+	return fmt.Errorf("config %s: strict self-protect requires at least one enabled edit_* tool to deny path %q in deny_paths", path, ProjectPolicyFileName)
+}
+
+func hasSelfDenyPath(patterns []string) bool {
+	for _, p := range patterns {
+		pat := strings.TrimSpace(p)
+		if pat == "" {
+			continue
+		}
+		if filepath.Base(pat) == ProjectPolicyFileName {
+			return true
+		}
+		if ok, err := doublestar.Match(pat, ProjectPolicyFileName); err == nil && ok {
+			return true
+		}
+		if ok, err := doublestar.Match(pat, filepath.ToSlash("workspace/"+ProjectPolicyFileName)); err == nil && ok {
+			return true
+		}
+	}
+	return false
 }
 
 // loadFile parses a YAML config file. A missing file returns an empty Config

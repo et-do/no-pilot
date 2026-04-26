@@ -17,7 +17,7 @@ const toolEditNotebook = "edit_editNotebook"
 
 var editNotebookTool = mcp.NewTool(
 	toolEditNotebook,
-	mcp.WithDescription("Insert, delete, or modify notebook cells in a .ipynb file."),
+	mcp.WithDescription("[EDIT] Insert, delete, or modify notebook cells in a .ipynb file."),
 	mcp.WithString("filePath",
 		mcp.Required(),
 		mcp.Description("Absolute path to the notebook file."),
