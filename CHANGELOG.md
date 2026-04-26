@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.4.0](https://github.com/et-do/no-pilot/compare/v1.3.0...v1.4.0) (2026-04-26)
+
+
+### Features
+
+* **execute:** expand runTests with language inference and runner support ([35ea937](https://github.com/et-do/no-pilot/commit/35ea9373030ebaacfbc8928ff8344934bd9e5578))
+* **policy:** add strict self-protect validation and terminal/edit po… ([#32](https://github.com/et-do/no-pilot/issues/32)) ([35ea937](https://github.com/et-do/no-pilot/commit/35ea9373030ebaacfbc8928ff8344934bd9e5578))
+
 ## [1.3.0](https://github.com/et-do/no-pilot/compare/v1.2.0...v1.3.0) (2026-04-26)
 
 
