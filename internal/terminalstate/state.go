@@ -51,7 +51,6 @@ type session struct {
 	env         []string
 	cmd         *exec.Cmd
 	stdin       io.WriteCloser
-	readers     sync.WaitGroup
 	output      []byte
 	running     bool
 	exitCode    int
@@ -96,14 +95,6 @@ func StartWithOptions(command string, opts StartOptions) (Snapshot, error) {
 	if err != nil {
 		return Snapshot{}, fmt.Errorf("stdin pipe: %w", err)
 	}
-	stdout, err := cmd.StdoutPipe()
-	if err != nil {
-		return Snapshot{}, fmt.Errorf("stdout pipe: %w", err)
-	}
-	stderr, err := cmd.StderrPipe()
-	if err != nil {
-		return Snapshot{}, fmt.Errorf("stderr pipe: %w", err)
-	}
 
 	s := &session{
 		id:        newID(),
@@ -116,6 +107,8 @@ func StartWithOptions(command string, opts StartOptions) (Snapshot, error) {
 		startedAt: time.Now(),
 		done:      make(chan struct{}),
 	}
+	cmd.Stdout = &sessionOutputWriter{s: s}
+	cmd.Stderr = &sessionOutputWriter{s: s}
 
 	mu.Lock()
 	sessions[s.id] = s
@@ -133,9 +126,6 @@ func StartWithOptions(command string, opts StartOptions) (Snapshot, error) {
 		return Snapshot{}, fmt.Errorf("start command: %w", err)
 	}
 
-	s.readers.Add(2)
-	go s.capture(stdout)
-	go s.capture(stderr)
 	go s.wait()
 
 	return s.snapshot(), nil
@@ -198,20 +188,22 @@ func Send(id, input string) (Snapshot, error) {
 		return Snapshot{}, fmt.Errorf("terminal %q not found", id)
 	}
 
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if !s.running {
-		return s.snapshotLocked(), fmt.Errorf("terminal %q is not running", id)
+	s.mu.RLock()
+	running := s.running
+	stdin := s.stdin
+	s.mu.RUnlock()
+	if !running {
+		return s.snapshot(), fmt.Errorf("terminal %q is not running", id)
 	}
 
 	line := "\n"
 	if strings.TrimSpace(input) != "" {
 		line = input + "\n"
 	}
-	if _, err := io.WriteString(s.stdin, line); err != nil {
-		return s.snapshotLocked(), fmt.Errorf("send to terminal %q: %w", id, err)
+	if _, err := io.WriteString(stdin, line); err != nil {
+		return s.snapshot(), fmt.Errorf("send to terminal %q: %w", id, err)
 	}
-	return s.snapshotLocked(), nil
+	return s.snapshot(), nil
 }
 
 // Kill terminates a running terminal session.
@@ -224,15 +216,34 @@ func Kill(id string) (Snapshot, error) {
 	s.mu.RLock()
 	running := s.running
 	cmd := s.cmd
+	stdin := s.stdin
 	s.mu.RUnlock()
 	if !running {
 		return s.snapshot(), nil
 	}
+
+	// Close stdin first so stdin-driven programs (e.g. `cat`) can terminate
+	// cleanly even when wrapped by `sh -c`.
+	if stdin != nil {
+		_ = stdin.Close()
+	}
+
+	select {
+	case <-s.done:
+		return s.snapshot(), nil
+	default:
+	}
+
 	if err := cmd.Process.Kill(); err != nil {
 		return s.snapshot(), fmt.Errorf("kill terminal %q: %w", id, err)
 	}
-	<-s.done
-	return s.snapshot(), nil
+
+	select {
+	case <-s.done:
+		return s.snapshot(), nil
+	case <-time.After(2 * time.Second):
+		return s.snapshot(), fmt.Errorf("kill terminal %q: timeout waiting for process exit", id)
+	}
 }
 
 // LastSnapshot returns the current snapshot of the most recently started
@@ -274,7 +285,11 @@ func Reset() {
 		s.mu.RLock()
 		running := s.running
 		cmd := s.cmd
+		stdin := s.stdin
 		s.mu.RUnlock()
+		if stdin != nil {
+			_ = stdin.Close()
+		}
 		if running && cmd != nil && cmd.Process != nil {
 			_ = cmd.Process.Kill()
 		}
@@ -288,20 +303,6 @@ func getSession(id string) (*session, bool) {
 	return s, ok
 }
 
-func (s *session) capture(r io.Reader) {
-	defer s.readers.Done()
-	buf := make([]byte, 4096)
-	for {
-		n, err := r.Read(buf)
-		if n > 0 {
-			s.appendOutput(buf[:n])
-		}
-		if err != nil {
-			return
-		}
-	}
-}
-
 func (s *session) appendOutput(chunk []byte) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -313,7 +314,6 @@ func (s *session) appendOutput(chunk []byte) {
 
 func (s *session) wait() {
 	err := s.cmd.Wait()
-	s.readers.Wait()
 	duration := time.Since(s.startedAt)
 
 	exitCode := 0
@@ -335,6 +335,18 @@ func (s *session) wait() {
 	s.mu.Unlock()
 
 	close(s.done)
+}
+
+type sessionOutputWriter struct {
+	s *session
+}
+
+func (w *sessionOutputWriter) Write(p []byte) (int, error) {
+	if w == nil || w.s == nil {
+		return len(p), nil
+	}
+	w.s.appendOutput(p)
+	return len(p), nil
 }
 
 func (s *session) snapshot() Snapshot {
