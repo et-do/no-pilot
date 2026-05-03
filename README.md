@@ -1,10 +1,19 @@
-# no-pilot
+<p align="center">
+  <img src="imgs/icon.png" alt="no-pilot logo" width="240" />
+</p>
 
-Zero-trust MCP server mirroring GitHub Copilot's built-in VS Code tools, with strict policy enforcement and no cloud dependencies.
+<h1 align="center">no-pilot</h1>
 
-[![Release](https://img.shields.io/github/v/release/et-do/no-pilot)](https://github.com/et-do/no-pilot/releases/latest)
-[![CI](https://github.com/et-do/no-pilot/actions/workflows/ci.yml/badge.svg)](https://github.com/et-do/no-pilot/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+<p align="center">
+  Zero-trust MCP server mirroring GitHub Copilot's built-in VS Code tools,<br />
+  with strict policy enforcement and no cloud dependencies.
+</p>
+
+<p align="center">
+  <a href="https://github.com/et-do/no-pilot/releases/latest"><img src="https://img.shields.io/github/v/release/et-do/no-pilot" alt="Release" /></a>
+  <a href="https://github.com/et-do/no-pilot/actions/workflows/ci.yml"><img src="https://github.com/et-do/no-pilot/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT" /></a>
+</p>
 
 ---
 
