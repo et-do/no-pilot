@@ -163,19 +163,6 @@ func normalizeLanguage(raw string) string {
 	}
 }
 
-func detectLanguageFromTargets(files []string) string {
-	for _, f := range files {
-		v := strings.ToLower(strings.TrimSpace(f))
-		switch {
-		case strings.HasSuffix(v, ".py"):
-			return "python"
-		case strings.HasSuffix(v, ".js"), strings.HasSuffix(v, ".jsx"), strings.HasSuffix(v, ".ts"), strings.HasSuffix(v, ".tsx"):
-			return "node"
-		}
-	}
-	return "go"
-}
-
 func buildTestCommand(language, mode string, files, testNames []string) (string, []string, string, error) {
 	switch language {
 	case "go":

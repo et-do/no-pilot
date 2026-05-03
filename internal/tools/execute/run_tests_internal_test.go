@@ -2,27 +2,9 @@ package execute
 
 import "testing"
 
-func TestNormalizeLanguage(t *testing.T) {
-	cases := map[string]string{
-		"go":         "go",
-		"golang":     "go",
-		"python":     "python",
-		"py":         "python",
-		"javascript": "node",
-		"typescript": "node",
-		"node":       "node",
-		"unknown":    "",
-	}
-	for in, want := range cases {
-		if got := normalizeLanguage(in); got != want {
-			t.Fatalf("normalizeLanguage(%q) = %q, want %q", in, got, want)
-		}
-	}
-}
-
-func TestParseStringListArgSplitsWhitespace(t *testing.T) {
-	got := parseStringListArg("./pkg/a, ./pkg/b\n./pkg/c\t./pkg/d")
-	want := []string{"./pkg/a", "./pkg/b", "./pkg/c", "./pkg/d"}
+func TestParseStringListArgSplitsCommaAndNewline(t *testing.T) {
+	got := parseStringListArg("./pkg/a, ./pkg/b\n./pkg/c")
+	want := []string{"./pkg/a", "./pkg/b", "./pkg/c"}
 	if len(got) != len(want) {
 		t.Fatalf("len = %d, want %d (%v)", len(got), len(want), got)
 	}
@@ -33,29 +15,36 @@ func TestParseStringListArgSplitsWhitespace(t *testing.T) {
 	}
 }
 
-func TestNormalizeGoTestTargetsFileToPackageAndDedup(t *testing.T) {
-	got := normalizeGoTestTargets([]string{
-		"internal/tools/execute/run_tests.go",
-		"./internal/tools/execute/run_tests_test.go",
-		"internal/tools/execute",
-	})
-	want := []string{"./internal/tools/execute"}
+func TestParseStringListArgFromAnySlice(t *testing.T) {
+	got := parseStringListArg([]any{" ./a ", 42, "./b"})
+	want := []string{"./a", "./b"}
 	if len(got) != len(want) {
 		t.Fatalf("len = %d, want %d (%v)", len(got), len(want), got)
 	}
-	if got[0] != want[0] {
-		t.Fatalf("got[0] = %q, want %q", got[0], want[0])
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("got[%d] = %q, want %q", i, got[i], want[i])
+		}
 	}
 }
 
-func TestDetectLanguageFromTargets(t *testing.T) {
-	if got := detectLanguageFromTargets([]string{"tests/test_api.py"}); got != "python" {
-		t.Fatalf("python detection = %q, want python", got)
+func TestJoinTestNamesPatternEscapesMetaChars(t *testing.T) {
+	pattern := joinTestNamesPattern([]string{"Test[A]", "Case(1)"})
+	want := "(Test\\[A\\]|Case\\(1\\))"
+	if pattern != want {
+		t.Fatalf("pattern = %q, want %q", pattern, want)
 	}
-	if got := detectLanguageFromTargets([]string{"src/foo.spec.ts"}); got != "node" {
-		t.Fatalf("node detection = %q, want node", got)
+	if pattern == "(Test[A]|Case(1))" {
+		t.Fatal("regex metacharacters were not escaped")
 	}
-	if got := detectLanguageFromTargets([]string{"internal/config/config_test.go"}); got != "go" {
-		t.Fatalf("go fallback = %q, want go", got)
+}
+
+func TestCoverageLineMatchesFilters(t *testing.T) {
+	line := "github.com/et-do/no-pilot/internal/tools/execute/run_tests.go:10.1,15.2 1 1"
+	if !coverageLineMatchesFilters(line, []string{"internal/tools/execute/run_tests.go"}) {
+		t.Fatal("expected filter match by substring")
+	}
+	if coverageLineMatchesFilters(line, []string{"internal/tools/read/problems.go"}) {
+		t.Fatal("expected non-matching filter")
 	}
 }

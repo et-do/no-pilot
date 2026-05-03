@@ -1,0 +1,64 @@
+{
+  "name": "no-pilot-vscode-bridge",
+  "displayName": "no-pilot VS Code Bridge",
+  "description": "Optional companion bridge for no-pilot: exposes VS Code terminal and diagnostics over localhost.",
+  "version": "0.1.0",
+  "publisher": "et-do",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.95.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "mcp",
+    "no-pilot",
+    "terminal",
+    "diagnostics"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "noPilotBridge.showStatus",
+        "title": "no-pilot Bridge: Show Status"
+      },
+      {
+        "command": "noPilotBridge.restartServer",
+        "title": "no-pilot Bridge: Restart Server"
+      }
+    ],
+    "configuration": {
+      "title": "no-pilot Bridge",
+      "properties": {
+        "noPilot.bridgePort": {
+          "type": "number",
+          "default": 7777,
+          "minimum": 1,
+          "maximum": 65535,
+          "description": "Localhost port used by the no-pilot VS Code bridge server."
+        },
+        "noPilot.bridgeHost": {
+          "type": "string",
+          "default": "127.0.0.1",
+          "description": "Host used by the no-pilot VS Code bridge server. Keep this on localhost."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "clean": "rm -rf dist",
+    "compile": "tsc -p .",
+    "watch": "tsc -w -p .",
+    "package": "npm run clean && npm run compile && npx @vscode/vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.0",
+    "@types/vscode": "^1.95.0",
+    "typescript": "^5.6.3"
+  }
+}

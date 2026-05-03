@@ -2,6 +2,8 @@ package read_test
 
 import (
 	"context"
+	"encoding/json"
+	"net/http"
 	"strings"
 	"testing"
 
@@ -20,6 +22,30 @@ func callTerminalLastCommand(t *testing.T, c *client.Client) *mcp.CallToolResult
 		t.Fatalf("CallTool: %v", err)
 	}
 	return result
+}
+
+func TestTerminalLastCommand_vscodeTargetUsesBridge(t *testing.T) {
+	withBridgeServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/terminal/last_command" {
+			t.Fatalf("path = %q, want /terminal/last_command", r.URL.Path)
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{"text": "command: bridge-cmd"})
+	}))
+
+	c := newClient(t, defaultConfig(t))
+	req := mcp.CallToolRequest{}
+	req.Params.Name = "read_terminalLastCommand"
+	req.Params.Arguments = map[string]any{"target": "vscode"}
+	result, err := c.CallTool(context.Background(), req)
+	if err != nil {
+		t.Fatalf("CallTool: %v", err)
+	}
+	if result.IsError {
+		t.Fatalf("unexpected bridge error: %v", result.Content)
+	}
+	if !strings.Contains(textContent(t, result), "bridge-cmd") {
+		t.Fatalf("unexpected content: %q", textContent(t, result))
+	}
 }
 
 func TestTerminalLastCommand_emptyBeforeAnyCommand(t *testing.T) {

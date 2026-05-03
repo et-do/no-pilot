@@ -13,6 +13,7 @@ import (
 
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/et-do/no-pilot/internal/config"
+	"github.com/et-do/no-pilot/internal/integrations/vscode"
 	"github.com/et-do/no-pilot/internal/policy"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
@@ -32,6 +33,9 @@ var problemsTool = mcp.NewTool(
 	mcp.WithString("path",
 		mcp.Description("Optional file or directory path to check recursively for .go files."),
 	),
+	mcp.WithString("source",
+		mcp.Description("Problem source: workspace (default) or vscode (requires bridge)."),
+	),
 )
 
 func registerProblems(s *server.MCPServer, cfg config.Provider) {
@@ -40,7 +44,26 @@ func registerProblems(s *server.MCPServer, cfg config.Provider) {
 }
 
 func handleProblems(cfg config.Provider) server.ToolHandlerFunc {
-	return func(_ context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		source := strings.ToLower(strings.TrimSpace(req.GetString("source", "workspace")))
+		if source == "vscode" {
+			bridge, bridgeErr := vscode.NewFromEnv()
+			if bridgeErr != nil {
+				return mcp.NewToolResultError(bridgeErr.Error()), nil
+			}
+			resp, bridgeErr := bridge.ReadProblems(ctx, map[string]any{
+				"filePath": req.GetString("filePath", ""),
+				"path":     req.GetString("path", ""),
+				"paths":    req.GetArguments()["paths"],
+			})
+			if bridgeErr != nil {
+				return mcp.NewToolResultError(bridgeErr.Error()), nil
+			}
+			result := mcp.NewToolResultText(resp.Text)
+			result.IsError = resp.IsError
+			return result, nil
+		}
+
 		targets, err := collectProblemTargets(req)
 		if err != nil {
 			return mcp.NewToolResultError(err.Error()), nil
@@ -61,7 +84,9 @@ func handleProblems(cfg config.Provider) server.ToolHandlerFunc {
 			}
 		}
 
-		problems = append(problems, compileProblemsForFiles(files)...)
+		for _, line := range compileProblemsForFiles(files) {
+			problems = append(problems, line)
+		}
 		problems = uniqueStrings(problems)
 		if len(problems) == 0 {
 			return mcp.NewToolResultText("no problems found"), nil

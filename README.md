@@ -36,6 +36,136 @@ These are deliberate departures from pure mirror behavior to improve enforceabil
 
 ---
 
+## VS Code Bridge Mode
+
+no-pilot supports an optional VS Code bridge path for terminal and diagnostics interactions.
+
+- Standalone mode (default): no extension required; tools run via no-pilot managed implementations.
+- VS Code UX bridge mode (optional): install a companion VS Code extension that exposes bridge endpoints, then set `NO_PILOT_VSCODE_BRIDGE_URL`.
+
+When bridge mode is enabled:
+
+- Use `target: "vscode"` on terminal tools to route through VS Code terminal APIs.
+- Use `source: "vscode"` on `read_problems` to read VS Code diagnostics.
+- Omit these fields (or use managed/workspace defaults) to keep standalone server behavior.
+
+### Optional companion extension
+
+For teams that want seamless VS Code UI integration, ship a companion extension that auto-starts a localhost bridge server in the extension host.
+
+This repo now includes that companion package at [extensions/no-pilot-vscode-bridge](extensions/no-pilot-vscode-bridge).
+
+Recommended behavior:
+
+- Activate on startup (`onStartupFinished`) and workspace open.
+- Start a local HTTP server (localhost only) exposing `/terminal/*` and `/read/problems`.
+- Keep bridge startup automatic so users only install/enable once.
+- Keep no-pilot usable without the extension (bridge remains optional).
+
+Quick local run for the extension package:
+
+1. In [extensions/no-pilot-vscode-bridge](extensions/no-pilot-vscode-bridge), install dependencies: `npm install`
+2. Compile: `npm run compile`
+3. Open the extension folder in VS Code and press `F5` to run an Extension Development Host
+4. Point no-pilot to the bridge URL using `NO_PILOT_VSCODE_BRIDGE_URL` (default `http://127.0.0.1:7777`)
+
+### Publishing the extension to VS Code Marketplace
+
+Use this release flow for the companion extension package:
+
+1. Create a publisher in the Visual Studio Marketplace Publisher Management portal.
+2. Create a Personal Access Token (Marketplace: Manage scope).
+3. In the extension project, set publisher/name/version in package.json and add an icon/README/changelog.
+4. Package locally with `npx @vscode/vsce package`.
+5. Publish with `npx @vscode/vsce publish` (or `publish <version>`).
+6. Automate in CI by storing the PAT as a GitHub Actions secret and running `vsce publish` on tagged releases.
+7. Optionally also publish to Open VSX for non-Microsoft distributions.
+
+This repo includes a publish workflow at [.github/workflows/publish-vscode-bridge-extension.yml](.github/workflows/publish-vscode-bridge-extension.yml), triggered by tags matching `vscode-bridge-v*`.
+
+Docs to link in your extension repo:
+
+- VS Code extension publishing: https://code.visualstudio.com/api/working-with-extensions/publishing-extension
+- vsce CLI: https://github.com/microsoft/vscode-vsce
+
+### Bridge URL setup
+
+Configure the bridge URL where no-pilot is launched (your MCP server entry).
+
+Option A: set `env` in `.vscode/mcp.json` for the `no-pilot` server:
+
+```json
+{
+  "servers": {
+    "no-pilot": {
+      "type": "stdio",
+      "command": "/usr/local/bin/no-pilot",
+      "args": [],
+      "env": {
+        "NO_PILOT_VSCODE_BRIDGE_URL": "http://127.0.0.1:7777"
+      }
+    }
+  }
+}
+```
+
+Option B: if you launch through a shell wrapper, export inline:
+
+```json
+{
+  "servers": {
+    "no-pilot": {
+      "type": "stdio",
+      "command": "/bin/sh",
+      "args": [
+        "-c",
+        "NO_PILOT_VSCODE_BRIDGE_URL=http://127.0.0.1:7777 no-pilot"
+      ]
+    }
+  }
+}
+```
+
+In this repo's devcontainer-style command, the same pattern works:
+
+`cd /workspaces/no-pilot && NO_PILOT_VSCODE_BRIDGE_URL=http://127.0.0.1:7777 go run .`
+
+Currently bridged tool routes:
+
+- `execute_runInTerminal` (`target=vscode`)
+- `execute_getTerminalOutput` (`target=vscode`)
+- `execute_sendToTerminal` (`target=vscode`)
+- `execute_killTerminal` (`target=vscode`)
+- `execute_listTerminals` (`target=vscode`)
+- `read_terminalLastCommand` (`target=vscode`)
+- `read_problems` (`source=vscode`)
+
+Example MCP arguments:
+
+```json
+{
+  "tool": "execute_runInTerminal",
+  "arguments": {
+    "command": "go test ./...",
+    "mode": "sync",
+    "target": "vscode"
+  }
+}
+```
+
+```json
+{
+  "tool": "read_problems",
+  "arguments": {
+    "source": "vscode"
+  }
+}
+```
+
+If the bridge URL is not configured, these calls fail closed with an explicit bridge-not-configured error.
+
+---
+
 ## Security Model
 
 AI coding agents introduce two distinct risks. no-pilot is purpose-built to address the first; the second requires separate action on your part.

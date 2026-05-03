@@ -13,8 +13,8 @@ import (
 func Register(s *server.MCPServer, cfg config.Provider) {
 	registerCreateFile(s, cfg)
 	registerCreateDirectory(s, cfg)
-	registerEditFiles(s, cfg)
-	registerRenameSymbol(s, cfg)
-	registerEditNotebook(s, cfg)
 	registerCreateNotebook(s, cfg)
+	registerEditFiles(s, cfg)
+	registerEditNotebook(s, cfg)
+	registerRenameSymbol(s, cfg)
 }

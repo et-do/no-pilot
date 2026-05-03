@@ -17,8 +17,8 @@ func Register(s *server.MCPServer, cfg config.Provider) {
 	registerGetTerminalOutput(s, cfg)
 	registerSendToTerminal(s, cfg)
 	registerKillTerminal(s, cfg)
-	registerRunNotebookCell(s, cfg)
-	registerCreateAndRunTask(s, cfg)
 	registerRunTests(s, cfg)
 	registerTestFailure(s, cfg)
+	registerRunNotebookCell(s, cfg)
+	registerCreateAndRunTask(s, cfg)
 }

@@ -3,8 +3,10 @@ package execute
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/et-do/no-pilot/internal/config"
+	"github.com/et-do/no-pilot/internal/integrations/vscode"
 	"github.com/et-do/no-pilot/internal/policy"
 	"github.com/et-do/no-pilot/internal/terminalstate"
 	"github.com/mark3labs/mcp-go/mcp"
@@ -15,7 +17,7 @@ const toolGetTerminalOutput = "execute_getTerminalOutput"
 
 var getTerminalOutputTool = mcp.NewTool(
 	toolGetTerminalOutput,
-	mcp.WithDescription("[EXECUTE] Get the current output from a terminal session."),
+	mcp.WithDescription("Get the current output from a terminal session."),
 	mcp.WithReadOnlyHintAnnotation(true),
 	mcp.WithDestructiveHintAnnotation(false),
 	mcp.WithString("id",
@@ -28,17 +30,39 @@ var getTerminalOutputTool = mcp.NewTool(
 	mcp.WithNumber("endOffset",
 		mcp.Description("Optional last output byte offset (0-based, exclusive)."),
 	),
+	mcp.WithString("target",
+		mcp.Description("Terminal target: managed (default) or vscode (requires bridge)."),
+	),
 )
 
 func registerGetTerminalOutput(s *server.MCPServer, cfg config.Provider) {
 	s.AddTool(getTerminalOutputTool, policy.Enforce(cfg, toolGetTerminalOutput)(handleGetTerminalOutput))
 }
 
-func handleGetTerminalOutput(_ context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func handleGetTerminalOutput(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	id, err := req.RequireString("id")
 	if err != nil {
 		return mcp.NewToolResultError("id is required and must be a string"), nil
 	}
+	target := strings.ToLower(strings.TrimSpace(req.GetString("target", "managed")))
+	if target == "vscode" {
+		bridge, bridgeErr := vscode.NewFromEnv()
+		if bridgeErr != nil {
+			return mcp.NewToolResultError(bridgeErr.Error()), nil
+		}
+		resp, bridgeErr := bridge.TerminalGetOutput(ctx, map[string]any{
+			"id":          id,
+			"startOffset": req.GetInt("startOffset", 0),
+			"endOffset":   req.GetInt("endOffset", -1),
+		})
+		if bridgeErr != nil {
+			return mcp.NewToolResultError(bridgeErr.Error()), nil
+		}
+		result := mcp.NewToolResultText(resp.Text)
+		result.IsError = resp.IsError
+		return result, nil
+	}
+
 	snapshot, ok := terminalstate.GetOutput(id)
 	if !ok {
 		return mcp.NewToolResultError(fmt.Sprintf("terminal %q not found", id)), nil

@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/et-do/no-pilot/internal/config"
+	"github.com/et-do/no-pilot/internal/integrations/vscode"
 	"github.com/et-do/no-pilot/internal/policy"
 	"github.com/et-do/no-pilot/internal/terminalstate"
 	"github.com/mark3labs/mcp-go/mcp"
@@ -17,16 +18,34 @@ const toolListTerminals = "execute_listTerminals"
 
 var listTerminalsTool = mcp.NewTool(
 	toolListTerminals,
-	mcp.WithDescription("[EXECUTE] List tracked terminal sessions."),
+	mcp.WithDescription("List tracked terminal sessions."),
 	mcp.WithReadOnlyHintAnnotation(true),
 	mcp.WithDestructiveHintAnnotation(false),
+	mcp.WithString("target",
+		mcp.Description("Terminal target: managed (default) or vscode (requires bridge)."),
+	),
 )
 
 func registerListTerminals(s *server.MCPServer, cfg config.Provider) {
 	s.AddTool(listTerminalsTool, policy.Enforce(cfg, toolListTerminals)(handleListTerminals))
 }
 
-func handleListTerminals(_ context.Context, _ mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func handleListTerminals(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	target := strings.ToLower(strings.TrimSpace(req.GetString("target", "managed")))
+	if target == "vscode" {
+		bridge, bridgeErr := vscode.NewFromEnv()
+		if bridgeErr != nil {
+			return mcp.NewToolResultError(bridgeErr.Error()), nil
+		}
+		resp, bridgeErr := bridge.TerminalList(ctx)
+		if bridgeErr != nil {
+			return mcp.NewToolResultError(bridgeErr.Error()), nil
+		}
+		result := mcp.NewToolResultText(resp.Text)
+		result.IsError = resp.IsError
+		return result, nil
+	}
+
 	snapshots := terminalstate.ListSnapshots()
 	if len(snapshots) == 0 {
 		return mcp.NewToolResultText("no terminal sessions"), nil

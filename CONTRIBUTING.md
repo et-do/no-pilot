@@ -56,6 +56,37 @@ make install
 > [!NOTE]
 > `make install` is **not** run automatically on every VS Code attach. The MCP server uses `go run .` directly, so the installed binary is only needed if you are explicitly testing it.
 
+### Companion extension local development
+
+This repo includes an optional VS Code bridge extension at `extensions/no-pilot-vscode-bridge`.
+
+- The devcontainer installs Node.js 20 and npm, then runs `npm install` in the extension folder during `postCreateCommand`.
+- If dependencies ever drift, rerun:
+  - `cd extensions/no-pilot-vscode-bridge`
+  - `npm install`
+  - `npm run compile`
+- To debug the extension bridge locally, open the extension folder in VS Code and press `F5` (Extension Development Host).
+
+### Token setup for extension publishing (GitHub + Marketplace)
+
+To publish the companion extension from GitHub Actions (`.github/workflows/publish-vscode-bridge-extension.yml`), set these secrets:
+
+1. Create or open your Visual Studio Marketplace publisher:
+  - Go to https://marketplace.visualstudio.com/manage
+2. Create a Marketplace personal access token:
+  - In Publisher Management, create a PAT with Manage rights for your publisher
+3. Add token to this GitHub repository:
+  - GitHub repo → Settings → Secrets and variables → Actions → New repository secret
+  - Name: `VSCE_PAT`
+  - Value: paste the Marketplace PAT
+4. (Optional) Add Open VSX token for dual publishing:
+  - Name: `OVSX_TOKEN`
+  - Value: your Open VSX PAT
+5. Trigger publish workflow:
+  - Push a tag matching `vscode-bridge-v*` (for example `vscode-bridge-v0.1.0`) or run the workflow manually via `workflow_dispatch`
+
+The workflow will publish to VS Code Marketplace when `VSCE_PAT` is set, and to Open VSX when `OVSX_TOKEN` is set.
+
 ## Example Commit Messages
 
 | Prefix | Version Bump | When to use |

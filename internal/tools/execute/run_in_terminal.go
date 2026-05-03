@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/et-do/no-pilot/internal/config"
+	"github.com/et-do/no-pilot/internal/integrations/vscode"
 	"github.com/et-do/no-pilot/internal/policy"
 	"github.com/et-do/no-pilot/internal/terminalstate"
 	"github.com/mark3labs/mcp-go/mcp"
@@ -17,7 +18,7 @@ const toolRunInTerminal = "execute_runInTerminal"
 
 var runInTerminalTool = mcp.NewTool(
 	toolRunInTerminal,
-	mcp.WithDescription("[EXECUTE] Run a shell command in the workspace. Supports sync and async terminal sessions."),
+	mcp.WithDescription("Run a shell command in the workspace. Supports sync and async terminal sessions."),
 	mcp.WithString("command",
 		mcp.Required(),
 		mcp.Description("Shell command to execute (e.g. 'go build .')."),
@@ -34,6 +35,9 @@ var runInTerminalTool = mcp.NewTool(
 	mcp.WithString("env",
 		mcp.Description("Optional newline-separated KEY=VALUE entries to add to this terminal session environment."),
 	),
+	mcp.WithString("target",
+		mcp.Description("Terminal target: managed (default) or vscode (requires bridge)."),
+	),
 )
 
 func registerRunInTerminal(s *server.MCPServer, cfg config.Provider) {
@@ -42,11 +46,32 @@ func registerRunInTerminal(s *server.MCPServer, cfg config.Provider) {
 	s.AddTool(runInTerminalTool, h)
 }
 
-func handleRunInTerminal(_ context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func handleRunInTerminal(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	cmdStr, err := req.RequireString("command")
 	if err != nil {
 		return mcp.NewToolResultError("command is required and must be a string"), nil
 	}
+	target := strings.ToLower(strings.TrimSpace(req.GetString("target", "managed")))
+	if target == "vscode" {
+		bridge, bridgeErr := vscode.NewFromEnv()
+		if bridgeErr != nil {
+			return mcp.NewToolResultError(bridgeErr.Error()), nil
+		}
+		resp, bridgeErr := bridge.TerminalRun(ctx, map[string]any{
+			"command": cmdStr,
+			"mode":    req.GetString("mode", "sync"),
+			"timeout": req.GetInt("timeout", 0),
+			"cwd":     req.GetString("cwd", ""),
+			"env":     req.GetString("env", ""),
+		})
+		if bridgeErr != nil {
+			return mcp.NewToolResultError(bridgeErr.Error()), nil
+		}
+		result := mcp.NewToolResultText(resp.Text)
+		result.IsError = resp.IsError
+		return result, nil
+	}
+
 	mode := req.GetString("mode", "sync")
 	if mode != "sync" && mode != "async" {
 		return mcp.NewToolResultError("mode must be 'sync' or 'async'"), nil

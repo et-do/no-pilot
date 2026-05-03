@@ -1,6 +1,8 @@
 package execute_test
 
 import (
+	"encoding/json"
+	"net/http"
 	"strings"
 	"testing"
 
@@ -66,5 +68,25 @@ func TestGetTerminalOutput_afterKilledSessionShowsCompletion(t *testing.T) {
 	}
 	if !output.IsError {
 		t.Fatalf("expected killed process to report error exit, got %q", getText(output))
+	}
+}
+
+func TestGetTerminalOutput_vscodeTargetUsesBridge(t *testing.T) {
+	withBridgeServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/terminal/get_output" {
+			t.Fatalf("path = %q, want /terminal/get_output", r.URL.Path)
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{"text": "bridge output text"})
+	}))
+	c := testutil.NewClient(t, testutil.DefaultConfig(t))
+	result := callExecuteTool(t, c, "execute_getTerminalOutput", map[string]any{
+		"id":     "bridge-id",
+		"target": "vscode",
+	})
+	if result.IsError {
+		t.Fatalf("unexpected bridge error: %q", getText(result))
+	}
+	if !strings.Contains(getText(result), "bridge output text") {
+		t.Fatalf("unexpected text: %q", getText(result))
 	}
 }

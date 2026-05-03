@@ -2,6 +2,8 @@ package read_test
 
 import (
 	"context"
+	"encoding/json"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -150,5 +152,23 @@ func TestProblems_reportsCompilerUndefinedName(t *testing.T) {
 	}
 	if got, want := text, "undefined"; !strings.Contains(got, want) {
 		t.Errorf("got %q, want substring %q", got, want)
+	}
+}
+
+func TestProblems_sourceVscodeUsesBridge(t *testing.T) {
+	withBridgeServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/read/problems" {
+			t.Fatalf("path = %q, want /read/problems", r.URL.Path)
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{"text": "vscode problems payload"})
+	}))
+
+	c := newClient(t, defaultConfig(t))
+	res := callProblems(t, c, map[string]any{"source": "vscode"})
+	if res.IsError {
+		t.Fatalf("unexpected bridge error: %v", res.Content)
+	}
+	if !strings.Contains(textContent(t, res), "vscode problems payload") {
+		t.Fatalf("unexpected text: %q", textContent(t, res))
 	}
 }

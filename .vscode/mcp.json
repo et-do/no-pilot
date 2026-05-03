@@ -3,7 +3,7 @@
     "no-pilot": {
       "type": "stdio",
       "command": "/bin/sh",
-      "args": ["-c", "cd /workspaces/no-pilot && go run ."]
+      "args": ["-c", "cd /workspaces/no-pilot && NO_PILOT_VSCODE_BRIDGE_URL=http://127.0.0.1:7777 go run ."]
     }
   }
 }

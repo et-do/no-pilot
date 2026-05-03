@@ -1,0 +1,48 @@
+name: Publish VS Code Bridge Extension
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "vscode-bridge-v*"
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: extensions/no-pilot-vscode-bridge
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Compile extension
+        run: npm run compile
+
+      - name: Publish to VS Code Marketplace
+        if: ${{ secrets.VSCE_PAT != '' }}
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        run: npx @vscode/vsce publish
+
+      - name: Publish to Open VSX
+        if: ${{ secrets.OVSX_TOKEN != '' }}
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_TOKEN }}
+        run: npx ovsx publish
+
+      - name: Skip notice
+        if: ${{ secrets.VSCE_PAT == '' && secrets.OVSX_TOKEN == '' }}
+        run: echo "No VSCE_PAT or OVSX_TOKEN configured; skipped publishing."

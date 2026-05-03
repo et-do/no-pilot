@@ -1,6 +1,8 @@
 package execute_test
 
 import (
+	"encoding/json"
+	"net/http"
 	"strings"
 	"testing"
 
@@ -39,4 +41,22 @@ func TestListTerminals_includesSessionMetadata(t *testing.T) {
 	}
 
 	_ = callExecuteTool(t, c, "execute_killTerminal", map[string]any{"id": id})
+}
+
+func TestListTerminals_vscodeTargetUsesBridge(t *testing.T) {
+	withBridgeServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/terminal/list" {
+			t.Fatalf("path = %q, want /terminal/list", r.URL.Path)
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{"text": "bridge list output"})
+	}))
+
+	c := testutil.NewClient(t, testutil.DefaultConfig(t))
+	result := callExecuteTool(t, c, "execute_listTerminals", map[string]any{"target": "vscode"})
+	if result.IsError {
+		t.Fatalf("unexpected bridge error: %q", getText(result))
+	}
+	if !strings.Contains(getText(result), "bridge list output") {
+		t.Fatalf("unexpected text: %q", getText(result))
+	}
 }

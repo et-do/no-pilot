@@ -1,6 +1,8 @@
 package execute_test
 
 import (
+	"encoding/json"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -175,5 +177,25 @@ func TestRunInTerminal_invalidEnvEntry(t *testing.T) {
 	})
 	if !result.IsError {
 		t.Fatalf("expected invalid env to fail, got %q", getText(result))
+	}
+}
+
+func TestRunInTerminal_vscodeTargetUsesBridge(t *testing.T) {
+	withBridgeServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/terminal/run" {
+			t.Fatalf("path = %q, want /terminal/run", r.URL.Path)
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{"text": "bridge terminal response"})
+	}))
+	c := testutil.NewClient(t, testutil.DefaultConfig(t))
+	result := callExecuteTool(t, c, "execute_runInTerminal", map[string]any{
+		"command": "echo hi",
+		"target":  "vscode",
+	})
+	if result.IsError {
+		t.Fatalf("unexpected bridge error: %q", getText(result))
+	}
+	if !strings.Contains(getText(result), "bridge terminal response") {
+		t.Fatalf("unexpected text: %q", getText(result))
 	}
 }
