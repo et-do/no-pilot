@@ -13,7 +13,7 @@ executing. Tools are grouped by the same toolsets Copilot uses.
 - [x] `read/listDirectory` — list the contents of a directory (mirrors `list_dir`)
 - [x] `read/terminalLastCommand` — get the last terminal command and its output (mirrors `terminal_last_command`)
 - [ ] `read/terminalSelection` — get the current terminal selection (mirrors `terminal_selection`; not on the standalone-server roadmap because it requires VS Code terminal UI integration)
-- [ ] VS Code terminal bridge mode for execute/read terminal tools: add terminal target abstraction, extension-host bridge transport, and managed fallback for standalone use
+- [x] VS Code bridge mode for execute/read terminal and diagnostics tools (`target=vscode` / `source=vscode`) with managed fallback for standalone use
 - [x] `read/problems` — get workspace errors and warnings from diagnostics (mirrors `get_errors`)
 - [x] `read/getNotebookSummary` — list notebook cells and their metadata (mirrors `copilot_getNotebookSummary`)
 - [x] `read/readNotebookCellOutput` — read the output of a notebook cell execution (mirrors `read_notebook_cell_output`)
@@ -49,6 +49,7 @@ executing. Tools are grouped by the same toolsets Copilot uses.
 - [x] `execute/createAndRunTask` — create/update `.vscode/tasks.json` and run shell task commands (closest standalone equivalent to `create_and_run_task`)
 - [x] `execute/runTests` — run tests across Go (`go test`), Python (`pytest`), and Node (`npm test`) with subset targeting, language selection/inference, and coverage mode support
 - [x] `execute/testFailure` — return failure details from the most recent `execute_runTests` run (standalone equivalent to `test_failure`)
+- [ ] Response verbosity controls for tool outputs (`compact`/`detailed`/`raw`) so Copilot Chat views are easier to review while preserving full diagnostics on demand
 
 ## `#browser` — headless browser (go-rod / chromedp)
 
@@ -98,4 +99,10 @@ No VS Code dependency — works as a standalone MCP server.
 - [x] Server bootstrap (`internal/server`) — `mcp-go` MCPServer wired to stdio
 - [x] Policy middleware — shared `enforce(cfg, toolName, path)` helper used by every tool handler
 - [x] Deny pattern matching — glob matching for `deny_patterns` (e.g. `path/filepath.Match` or `doublestar`)
+- [x] Companion VS Code extension bridge (extension-host localhost server for `/terminal/*` and `/read/problems`)
+- [x] Extension packaging and publishing pipeline (Marketplace + optional Open VSX)
 - [ ] Integration test harness — in-process client helpers shared across tool test files
+
+## Documentation
+
+- [ ] Add security-focused docs for running local LLMs via Ollama with Copilot (where supported), Roo, or Cline to strengthen local execution/data boundaries and reduce cloud exposure
